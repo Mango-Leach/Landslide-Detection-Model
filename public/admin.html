@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - IoT Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Leaflet.js for interactive maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 15px;
+        }
+
+        .admin-nav button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .admin-nav button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card-admin {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card-admin h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .stat-card-admin .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-card-admin .change {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .section-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .section-card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 12px;
+            background: var(--sidebar-bg);
+            color: var(--text-primary);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .users-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .users-table tr:hover {
+            background: var(--hover-bg);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background: #f443;
+            color: #f44;
+        }
+
+        .role-user {
+            background: #4af3;
+            color: #4af;
+        }
+
+        .role-viewer {
+            background: #fa43;
+            color: #fa4;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 0 4px;
+        }
+
+        .btn-edit {
+            background: #4af;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #f44;
+            color: white;
+        }
+
+        .btn-edit:hover, .btn-delete:hover {
+            transform: scale(1.05);
+        }
+
+        .system-settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .setting-item label {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4af;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 12px;
+            border-left: 3px solid #4af;
+            background: var(--hover-bg);
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .activity-item .time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .activity-item .message {
+            color: var(--text-primary);
+            margin-top: 4px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <h1>👑 Admin Panel</h1>
+        <div class="admin-nav">
+            <button onclick="window.location.href='index.html'">📊 Dashboard</button>
+            <button onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <div class="admin-content">
+        <!-- System Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card-admin">
+                <h3>Total Users</h3>
+                <div class="value" id="totalUsers">0</div>
+                <div class="change" style="color: #4f4;">↑ Active users</div>
+            </div>
+            <div class="stat-card-admin">
+                <h3>Data Points</h3>
+                <div class="value" id="totalDataPoints">0</div>
+                <div class="change" style="color: #4af;">Today's collection</div>
+            </div>
+            <div class="stat-card-admin">
+                <h3>Active Alerts</h3>
+                <div class="value" id="activeAlerts">0</div>
+                <div class="change" style="color: #fa4;">⚠️ Unacknowledged</div>
+            </div>
+            <div class="stat-card-admin">
+                <h3>System Uptime</h3>
+                <div class="value" id="systemUptime">0h</div>
+                <div class="change" style="color: #4f4;">✓ Running smoothly</div>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="section-card">
+            <h2>👥 User Management</h2>
+            <table class="users-table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px;">
+                            Loading users...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Emergency Shelter Management -->
+        <div class="section-card">
+            <h2>🏕️ Emergency Shelter Management</h2>
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <p style="color: var(--text-secondary);">Manage evacuation shelters and safe zones</p>
+                <button onclick="showAddShelterModal()" style="background: #00C851; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    ➕ Add New Shelter
+                </button>
+            </div>
+            <div id="shelters-list" style="display: grid; gap: 15px;">
+                <!-- Shelters will be loaded here -->
+            </div>
+        </div>
+
+        <!-- System Settings -->
+        <div class="section-card">
+            <h2>⚙️ System Settings</h2>
+            <div class="system-settings">
+                <div>
+                    <h3 style="margin-bottom: 15px; color: var(--text-primary);">General</h3>
+                    <div class="setting-item">
+                        <label>Enable Email Alerts</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="emailAlerts" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Enable Voice Alerts</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="voiceAlerts" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto-save Data</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoSave" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 15px; color: var(--text-primary);">AI & Analytics</h3>
+                    <div class="setting-item">
+                        <label>Enable AI Predictions</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="aiPredictions" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Anomaly Detection</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="anomalyDetection" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto-train Models</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoTrain" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-card">
+            <h2>📋 Recent Activity</h2>
+            <div class="activity-log" id="activityLog">
+                <div class="activity-item">
+                    <div class="time">Just now</div>
+                    <div class="message">Admin panel loaded successfully</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let users = [];
+
+        // Check admin authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || user.role !== 'admin') {
+                alert('Admin access required!');
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/auth/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    users = await response.json();
+                    renderUsers();
+                    document.getElementById('totalUsers').textContent = users.length;
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Render users table
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">No users found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="role-badge role-${user.role}">${user.role.toUpperCase()}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <button class="action-btn btn-edit" onclick="editUser('${user._id}')">✏️ Edit</button>
+                        <button class="action-btn btn-delete" onclick="deleteUser('${user._id}')">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Edit user
+        function editUser(userId) {
+            const user = users.find(u => u._id === userId);
+            if (user) {
+                const newRole = prompt(`Change role for ${user.username} (current: ${user.role})\n\nEnter: admin, user, or viewer`, user.role);
+                if (newRole && ['admin', 'user', 'viewer'].includes(newRole)) {
+                    // TODO: Implement API call to update user
+                    alert(`User role would be updated to: ${newRole}`);
+                }
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId) {
+            const user = users.find(u => u._id === userId);
+            if (user && confirm(`Are you sure you want to delete ${user.username}?`)) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/auth/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        alert('User deleted successfully');
+                        loadUsers();
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    alert('Failed to delete user');
+                }
+            }
+        }
+
+        // Load system info
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch('/api/system/info');
+                const data = await response.json();
+                
+                document.getElementById('systemUptime').textContent = 
+                    Math.floor(data.uptime / 3600) + 'h';
+                
+                // Load data count
+                const dataResponse = await fetch('/api/data?limit=10000');
+                const dataPoints = await dataResponse.json();
+                document.getElementById('totalDataPoints').textContent = dataPoints.length;
+                
+                // Load alerts
+                const alertsResponse = await fetch('/api/alerts');
+                const alertsData = await alertsResponse.json();
+                document.getElementById('activeAlerts').textContent = 
+                    alertsData.alerts.filter(a => !a.acknowledged).length;
+            } catch (error) {
+                console.error('Error loading system info:', error);
+            }
+        }
+
+        // Save settings
+        function saveSettings() {
+            const settings = {
+                emailAlerts: document.getElementById('emailAlerts').checked,
+                voiceAlerts: document.getElementById('voiceAlerts').checked,
+                autoSave: document.getElementById('autoSave').checked,
+                aiPredictions: document.getElementById('aiPredictions').checked,
+                anomalyDetection: document.getElementById('anomalyDetection').checked,
+                autoTrain: document.getElementById('autoTrain').checked
+            };
+            
+            localStorage.setItem('adminSettings', JSON.stringify(settings));
+            alert('✓ Settings saved successfully!');
+            
+            addActivity('Settings updated');
+        }
+
+        // Load settings
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('adminSettings') || '{}');
+            
+            if (settings.emailAlerts !== undefined) document.getElementById('emailAlerts').checked = settings.emailAlerts;
+            if (settings.voiceAlerts !== undefined) document.getElementById('voiceAlerts').checked = settings.voiceAlerts;
+            if (settings.autoSave !== undefined) document.getElementById('autoSave').checked = settings.autoSave;
+            if (settings.aiPredictions !== undefined) document.getElementById('aiPredictions').checked = settings.aiPredictions;
+            if (settings.anomalyDetection !== undefined) document.getElementById('anomalyDetection').checked = settings.anomalyDetection;
+            if (settings.autoTrain !== undefined) document.getElementById('autoTrain').checked = settings.autoTrain;
+        }
+
+        // Add activity log
+        function addActivity(message) {
+            const activityLog = document.getElementById('activityLog');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <div class="time">${new Date().toLocaleTimeString()}</div>
+                <div class="message">${message}</div>
+            `;
+            activityLog.insertBefore(item, activityLog.firstChild);
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // ========== SHELTER MANAGEMENT ==========
+        
+        // Open interactive map picker
+        function openMapPicker() {
+            // Check if Leaflet is loaded
+            if (typeof L === 'undefined') {
+                alert('❌ Map library is loading. Please wait a moment and try again.');
+                return;
+            }
+            
+            const latInput = document.getElementById('shelter_latitude');
+            const lonInput = document.getElementById('shelter_longitude');
+            const addressInput = document.getElementById('shelter_address');
+            
+            // Default center (use existing coords or Pune, India)
+            let defaultLat = latInput.value || 18.5204;
+            let defaultLon = lonInput.value || 73.8567;
+            
+            // Create map picker modal
+            const mapModal = document.createElement('div');
+            mapModal.id = 'mapPickerModal';
+            mapModal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 20000;">
+                    <div style="background: white; padding: 20px; border-radius: 15px; width: 95%; max-width: 900px; max-height: 95vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h2 style="margin: 0; color: #333;">🗺️ Pick Location on Map</h2>
+                            <button onclick="closeMapPicker()" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                ✖ Close
+                            </button>
+                        </div>
+                        <p style="color: #666; margin-bottom: 15px; font-size: 14px;">
+                            📍 Click anywhere on the map to select the shelter location. You can also search for a place using the search box.
+                        </p>
+                        <div style="display: grid; gap: 10px; margin-bottom: 15px;">
+                            <input type="text" id="mapSearch" placeholder="🔍 Search for a location (e.g., Railway Station, Pune)" 
+                                style="width: 100%; padding: 10px; border: 2px solid #2196F3; border-radius: 8px; font-size: 14px;">
+                            <button onclick="searchMapLocation()" style="background: #2196F3; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                🔍 Search Location
+                            </button>
+                        </div>
+                        <div id="mapContainer" style="width: 100%; height: 500px; border-radius: 10px; overflow: hidden; border: 2px solid #ddd;"></div>
+                        <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <strong>📍 Selected Latitude:</strong>
+                                    <div id="selectedLat" style="font-size: 18px; color: #2196F3; margin-top: 5px;">${defaultLat}</div>
+                                </div>
+                                <div>
+                                    <strong>📍 Selected Longitude:</strong>
+                                    <div id="selectedLon" style="font-size: 18px; color: #2196F3; margin-top: 5px;">${defaultLon}</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <strong>📍 Address:</strong>
+                                <div id="selectedAddress" style="margin-top: 5px; color: #666;">Fetching address...</div>
+                            </div>
+                        </div>
+                        <button onclick="confirmMapSelection()" style="width: 100%; margin-top: 15px; background: #4CAF50; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                            ✅ Use This Location
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(mapModal);
+            
+            // Initialize Leaflet map with a longer delay to ensure DOM is ready
+            setTimeout(() => {
+                try {
+                    initializeMap(defaultLat, defaultLon);
+                } catch (error) {
+                    console.error('Map initialization error:', error);
+                    alert('❌ Error loading map. Please try again.');
+                    closeMapPicker();
+                }
+            }, 300);
+        }
+        
+        // Initialize Leaflet map
+        let pickerMap = null;
+        let pickerMarker = null;
+        
+        function initializeMap(lat, lon) {
+            const container = document.getElementById('mapContainer');
+            if (!container) {
+                console.error('Map container not found');
+                return;
+            }
+            
+            // Clear any existing map
+            if (pickerMap) {
+                pickerMap.remove();
+                pickerMap = null;
+            }
+            
+            // Create map
+            pickerMap = L.map('mapContainer').setView([lat, lon], 13);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(pickerMap);
+            
+            // Create custom icon for marker
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="background: #FF0000; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"><div style="width: 10px; height: 10px; background: white; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(45deg);"></div></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+            
+            // Add marker
+            pickerMarker = L.marker([lat, lon], {
+                draggable: true,
+                icon: customIcon
+            }).addTo(pickerMap);
+            
+            // Update on marker drag
+            pickerMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                updateMapSelection(pos.lat, pos.lng);
+            });
+            
+            // Click on map to move marker
+            pickerMap.on('click', function(e) {
+                pickerMarker.setLatLng(e.latlng);
+                updateMapSelection(e.latlng.lat, e.latlng.lng);
+            });
+            
+            // Fix map size issue
+            setTimeout(() => {
+                pickerMap.invalidateSize();
+            }, 100);
+            
+            // Initial address fetch
+            updateMapSelection(lat, lon);
+        }
+        
+        // Update selected coordinates and fetch address
+        async function updateMapSelection(lat, lon) {
+            // Update display
+            document.getElementById('selectedLat').textContent = lat.toFixed(4);
+            document.getElementById('selectedLon').textContent = lon.toFixed(4);
+            document.getElementById('selectedAddress').textContent = 'Fetching address...';
+            
+            // Fetch address using reverse geocoding
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await response.json();
+                if (data && data.display_name) {
+                    document.getElementById('selectedAddress').textContent = data.display_name;
+                } else {
+                    document.getElementById('selectedAddress').textContent = `Location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                }
+            } catch (error) {
+                console.error('Error fetching address:', error);
+                document.getElementById('selectedAddress').textContent = `Location: ${lat.toFixed(4)}, ${lon.toFixed(4)} (Address unavailable)`;
+            }
+        }
+        
+        // Search location on map
+        async function searchMapLocation() {
+            const query = document.getElementById('mapSearch').value.trim();
+            if (!query) {
+                alert('⚠️ Please enter a location to search');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    const lat = parseFloat(location.lat);
+                    const lon = parseFloat(location.lon);
+                    
+                    // Move map and marker
+                    pickerMap.setView([lat, lon], 15);
+                    pickerMarker.setLatLng([lat, lon]);
+                    updateMapSelection(lat, lon);
+                } else {
+                    alert('❌ Location not found. Try a different search term.');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('❌ Error searching location');
+            }
+        }
+        
+        // Confirm map selection
+        function confirmMapSelection() {
+            const lat = document.getElementById('selectedLat').textContent;
+            const lon = document.getElementById('selectedLon').textContent;
+            const address = document.getElementById('selectedAddress').textContent;
+            
+            // Update form fields
+            document.getElementById('shelter_latitude').value = lat;
+            document.getElementById('shelter_longitude').value = lon;
+            
+            if (address && address !== 'Click on map to get address...') {
+                document.getElementById('shelter_address').value = address;
+            }
+            
+            // Close map picker
+            closeMapPicker();
+            
+            alert(`✅ Location selected!\n\nLatitude: ${lat}\nLongitude: ${lon}\n\nAddress has been updated.`);
+        }
+        
+        // Close map picker
+        function closeMapPicker() {
+            const modal = document.getElementById('mapPickerModal');
+            if (modal) {
+                if (pickerMap) {
+                    pickerMap.remove();
+                    pickerMap = null;
+                    pickerMarker = null;
+                }
+                modal.remove();
+            }
+        }
+        
+        // Get coordinates from address using Nominatim (OpenStreetMap)
+        async function getCoordinatesFromAddress() {
+            const addressInput = document.getElementById('shelter_address');
+            const latInput = document.getElementById('shelter_latitude');
+            const lonInput = document.getElementById('shelter_longitude');
+            
+            const address = addressInput.value.trim();
+            
+            if (!address) {
+                alert('⚠️ Please enter an address first!');
+                return;
+            }
+            
+            // Show loading state
+            const originalBtn = event.target;
+            originalBtn.disabled = true;
+            originalBtn.innerHTML = '🔄 Searching...';
+            
+            try {
+                // Using Nominatim API (free, no API key needed)
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    latInput.value = parseFloat(location.lat).toFixed(4);
+                    lonInput.value = parseFloat(location.lon).toFixed(4);
+                    
+                    // Update button to success
+                    originalBtn.innerHTML = '✅ Coordinates Found!';
+                    originalBtn.style.background = '#00C851';
+                    
+                    // Show success message
+                    alert(`✅ Coordinates found!\n\nLocation: ${location.display_name}\nLatitude: ${latInput.value}\nLongitude: ${lonInput.value}`);
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        originalBtn.disabled = false;
+                        originalBtn.innerHTML = '📍 Auto-Fill Coordinates from Address';
+                        originalBtn.style.background = '#2196F3';
+                    }, 2000);
+                } else {
+                    alert('❌ Could not find coordinates for this address.\n\nPlease try:\n• Adding more details (city, state, country)\n• Using a different format\n• Entering coordinates manually');
+                    originalBtn.disabled = false;
+                    originalBtn.innerHTML = '📍 Auto-Fill Coordinates from Address';
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                alert('❌ Error fetching coordinates. Please try again or enter them manually.');
+                originalBtn.disabled = false;
+                originalBtn.innerHTML = '📍 Auto-Fill Coordinates from Address';
+            }
+        }
+        
+        // Load shelters
+        async function loadShelters() {
+            try {
+                const response = await fetch('/api/safe-zones/all');
+                const data = await response.json();
+                
+                const sheltersList = document.getElementById('shelters-list');
+                sheltersList.innerHTML = data.zones.map(zone => `
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid ${zone.isTemporary ? '#ff9800' : '#00C851'};">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">
+                                    ${zone.name}
+                                    ${zone.isTemporary ? '<span style="background: #ff9800; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">TEMPORARY</span>' : ''}
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 5px;">
+                                    📍 ${zone.location.address}
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 10px;">
+                                    🗺️ ${zone.location.latitude.toFixed(4)}, ${zone.location.longitude.toFixed(4)}
+                                </div>
+                                <div style="display: flex; gap: 20px; font-size: 13px; margin-bottom: 10px;">
+                                    <span>👥 Capacity: ${zone.capacity}</span>
+                                    <span>📞 ${zone.contact}</span>
+                                    <span>🏷️ Type: ${zone.type.replace(/_/g, ' ')}</span>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                    ${zone.facilities.map(f => `
+                                        <span style="background: rgba(0,200,81,0.2); padding: 4px 10px; border-radius: 12px; font-size: 12px;">
+                                            ✓ ${f}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="editShelter('${zone.id}')" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">
+                                    ✏️ Edit
+                                </button>
+                                <button onclick="deleteShelter('${zone.id}', '${zone.name}')" style="background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading shelters:', error);
+            }
+        }
+
+        // Show add shelter modal
+        function showAddShelterModal() {
+            const modal = document.createElement('div');
+            modal.id = 'shelterModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                    <div style="background: var(--card-bg); padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="margin-bottom: 10px;">🏕️ Add New Emergency Shelter</h2>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px;">
+                            💡 Tip: Enter the address and auto-fill coordinates, OR use the interactive map to pin the exact location!
+                        </p>
+                        <form id="shelterForm" style="display: grid; gap: 15px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Shelter Name *</label>
+                                <input type="text" id="shelter_name" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Address *</label>
+                                <input type="text" id="shelter_address" required placeholder="Enter full address (e.g., MG Road, Pune, Maharashtra, India)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                                    <button type="button" onclick="getCoordinatesFromAddress()" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                                        📍 Auto-Fill from Address
+                                    </button>
+                                    <button type="button" onclick="openMapPicker()" style="background: #4CAF50; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                                        🗺️ Pick Location on Map
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Latitude *</label>
+                                    <input type="number" step="0.0001" id="shelter_latitude" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                    <small style="color: var(--text-secondary);">Auto-filled from address/map</small>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Longitude *</label>
+                                    <input type="number" step="0.0001" id="shelter_longitude" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                    <small style="color: var(--text-secondary);">Auto-filled from address/map</small>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Capacity</label>
+                                    <input type="number" id="shelter_capacity" value="100" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Contact</label>
+                                    <input type="text" id="shelter_contact" placeholder="+91-XXX-XXXX" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Type</label>
+                                <select id="shelter_type" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                                    <option value="emergency_shelter">Emergency Shelter</option>
+                                    <option value="community_center">Community Center</option>
+                                    <option value="school">School</option>
+                                    <option value="hospital">Hospital</option>
+                                    <option value="sports_complex">Sports Complex</option>
+                                    <option value="government_building">Government Building</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Facilities (comma-separated)</label>
+                                <input type="text" id="shelter_facilities" placeholder="Medical Aid, Food, Water, Toilets" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-color); color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="shelter_temporary">
+                                    <span>This is a temporary disaster shelter</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button type="submit" style="flex: 1; background: #00C851; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                                    ✅ Add Shelter
+                                </button>
+                                <button type="button" onclick="closeShelterModal()" style="flex: 1; background: #666; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                                    ❌ Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById('shelterForm').onsubmit = async (e) => {
+                e.preventDefault();
+                await saveShelter();
+            };
+        }
+
+        // Save shelter
+        async function saveShelter(isEdit = false, zoneId = null) {
+            const token = localStorage.getItem('token');
+            const data = {
+                name: document.getElementById('shelter_name').value,
+                address: document.getElementById('shelter_address').value,
+                latitude: parseFloat(document.getElementById('shelter_latitude').value),
+                longitude: parseFloat(document.getElementById('shelter_longitude').value),
+                capacity: parseInt(document.getElementById('shelter_capacity').value),
+                contact: document.getElementById('shelter_contact').value,
+                type: document.getElementById('shelter_type').value,
+                facilities: document.getElementById('shelter_facilities').value.split(',').map(f => f.trim()).filter(f => f),
+                isTemporary: document.getElementById('shelter_temporary').checked
+            };
+            
+            try {
+                const url = isEdit ? `/api/safe-zones/${zoneId}` : '/api/safe-zones';
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Shelter ${isEdit ? 'updated' : 'added'} successfully!`);
+                    closeShelterModal();
+                    loadShelters();
+                    addActivity(`${isEdit ? 'Updated' : 'Added'} shelter: ${data.name}`);
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error saving shelter:', error);
+                alert('❌ Failed to save shelter');
+            }
+        }
+
+        // Edit shelter
+        async function editShelter(id) {
+            try {
+                const response = await fetch(`/api/safe-zones/${id}`);
+                const { zone } = await response.json();
+                
+                showAddShelterModal();
+                document.querySelector('#shelterModal h2').textContent = '✏️ Edit Emergency Shelter';
+                document.getElementById('shelter_name').value = zone.name;
+                document.getElementById('shelter_address').value = zone.location.address;
+                document.getElementById('shelter_latitude').value = zone.location.latitude;
+                document.getElementById('shelter_longitude').value = zone.location.longitude;
+                document.getElementById('shelter_capacity').value = zone.capacity;
+                document.getElementById('shelter_contact').value = zone.contact;
+                document.getElementById('shelter_type').value = zone.type;
+                document.getElementById('shelter_facilities').value = zone.facilities.join(', ');
+                document.getElementById('shelter_temporary').checked = zone.isTemporary || false;
+                
+                document.getElementById('shelterForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    await saveShelter(true, id);
+                };
+            } catch (error) {
+                console.error('Error loading shelter:', error);
+            }
+        }
+
+        // Delete shelter
+        async function deleteShelter(id, name) {
+            if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+            
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch(`/api/safe-zones/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Shelter deleted successfully!');
+                    loadShelters();
+                    addActivity(`Deleted shelter: ${name}`);
+                } else {
+                    alert('❌ Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting shelter:', error);
+                alert('❌ Failed to delete shelter');
+            }
+        }
+
+        // Close modal
+        function closeShelterModal() {
+            const modal = document.getElementById('shelterModal');
+            if (modal) modal.remove();
+        }
+
+        // Load shelters on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadShelters();
+        });
+
+        // Initialize
+        checkAuth();
+        loadUsers();
+        loadSystemInfo();
+        loadSettings();
+
+        // Refresh data every 30 seconds
+        setInterval(() => {
+            loadSystemInfo();
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌋 Landslide AI Prediction - IoT Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .prediction-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric.high {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+
+        .metric.moderate {
+            background: linear-gradient(135deg, #ffd93d 0%, #ffb700 100%);
+            color: #333;
+        }
+
+        .metric.low {
+            background: linear-gradient(135deg, #6bcf7f 0%, #57b968 100%);
+            color: white;
+        }
+
+        .metric h3 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .metric .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .metric .label {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .patterns {
+            margin-top: 20px;
+        }
+
+        .pattern-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .pattern-item.active {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .pattern-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .refresh-btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+
+        .status-badge.learning {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-badge.trained {
+            background: #c8e6c9;
+            color: #388e3c;
+        }
+
+        .anomaly-score {
+            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .anomaly-score.critical {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+        }
+
+        .anomaly-score.warning {
+            background: linear-gradient(135deg, #ffd93d 0%, #ffb700 100%);
+            color: #333;
+        }
+
+        .anomaly-score.normal {
+            background: linear-gradient(135deg, #6bcf7f 0%, #57b968 100%);
+            color: white;
+        }
+
+        .conditions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .condition-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .condition-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .condition-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌋 AI Landslide Prediction System</h1>
+            <p>Predictive Analysis Based on Historical Data & Anomalies</p>
+        </div>
+
+        <div id="loading" class="card loading">
+            <h2>🔄 Loading prediction data...</h2>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- AI Prediction Card -->
+            <div class="card">
+                <h2>🧠 AI Landslide Risk Prediction</h2>
+                <div id="ai-status"></div>
+                <div class="prediction-box" id="prediction"></div>
+            </div>
+
+            <!-- Pattern Detection Card -->
+            <div class="card">
+                <h2>🔍 Multi-Sensor Pattern Detection</h2>
+                <div id="anomaly-score"></div>
+                <div class="patterns" id="patterns"></div>
+            </div>
+
+            <!-- Current Conditions Card -->
+            <div class="card">
+                <h2>📊 Current Environmental Conditions</h2>
+                <div class="conditions-grid" id="conditions"></div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadPrediction()">🔄 Refresh Prediction</button>
+        </div>
+    </div>
+
+    <script>
+        async function loadPrediction() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('content').style.display = 'none';
+
+                const response = await fetch('/api/landslide-prediction');
+                const data = await response.json();
+
+                console.log('Prediction data:', data);
+
+                // Show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                // Display AI prediction
+                displayPrediction(data.prediction);
+
+                // Display patterns
+                displayPatterns(data.patterns);
+
+                // Display current conditions
+                displayConditions(data.currentConditions);
+
+            } catch (error) {
+                console.error('Error loading prediction:', error);
+                document.getElementById('loading').innerHTML = '<h2>❌ Error loading prediction</h2><p>' + error.message + '</p>';
+            }
+        }
+
+        function displayPrediction(prediction) {
+            const container = document.getElementById('prediction');
+            const statusDiv = document.getElementById('ai-status');
+
+            if (!prediction) {
+                statusDiv.innerHTML = '<p style="color: #999; margin: 20px 0;">⚠️ AI model is still learning. Need at least 10 landslide events for predictions.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Collecting data for AI training...</p>';
+                return;
+            }
+
+            statusDiv.innerHTML = `
+                <div style="margin: 15px 0;">
+                    <span class="status-badge ${prediction.confidence === 'LEARNING' ? 'learning' : 'trained'}">
+                        ${prediction.confidence === 'LEARNING' ? '📚 Learning Mode' : '✅ Model Trained'}
+                    </span>
+                    <span class="status-badge learning">
+                        📈 ${prediction.eventsAnalyzed} Events Analyzed
+                    </span>
+                </div>
+            `;
+
+            const riskClass = prediction.risk === 'HIGH' ? 'high' : 
+                             prediction.risk === 'MODERATE' ? 'moderate' : 'low';
+
+            container.innerHTML = `
+                <div class="metric ${riskClass}">
+                    <h3>Landslide Probability</h3>
+                    <div class="value">${prediction.probability}%</div>
+                    <div class="label">Based on AI Analysis</div>
+                </div>
+                <div class="metric ${riskClass}">
+                    <h3>Risk Level</h3>
+                    <div class="value">${prediction.risk}</div>
+                    <div class="label">Current Assessment</div>
+                </div>
+            `;
+        }
+
+        function displayPatterns(patterns) {
+            if (!patterns) {
+                document.getElementById('anomaly-score').innerHTML = '';
+                document.getElementById('patterns').innerHTML = '<p style="color: #999;">No pattern data available</p>';
+                return;
+            }
+
+            const scoreClass = patterns.warning === 'CRITICAL' ? 'critical' :
+                              patterns.warning === 'WARNING' ? 'warning' : 'normal';
+
+            document.getElementById('anomaly-score').innerHTML = `
+                <div class="anomaly-score ${scoreClass}">
+                    <h3>Anomaly Detection Score</h3>
+                    <div style="font-size: 3rem; font-weight: bold; margin: 10px 0;">${patterns.anomalyScore}/10</div>
+                    <div style="font-size: 1.2rem;">Status: ${patterns.warning}</div>
+                </div>
+            `;
+
+            const patternsHTML = `
+                <div class="pattern-item ${patterns.rapidHumidityIncrease ? 'active' : ''}">
+                    <div class="pattern-icon">💧</div>
+                    <div>
+                        <strong>Rapid Humidity Increase</strong>
+                        <p>${patterns.rapidHumidityIncrease ? '⚠️ DETECTED - Abnormal moisture accumulation' : '✅ Normal levels'}</p>
+                    </div>
+                </div>
+                <div class="pattern-item ${patterns.temperatureSpike ? 'active' : ''}">
+                    <div class="pattern-icon">🌡️</div>
+                    <div>
+                        <strong>Temperature Anomaly</strong>
+                        <p>${patterns.temperatureSpike ? '⚠️ DETECTED - Unusual temperature pattern' : '✅ Normal range'}</p>
+                    </div>
+                </div>
+                <div class="pattern-item ${patterns.pressureDrop ? 'active' : ''}">
+                    <div class="pattern-icon">🌍</div>
+                    <div>
+                        <strong>Pressure Drop</strong>
+                        <p>${patterns.pressureDrop ? '⚠️ DETECTED - Significant atmospheric pressure decrease' : '✅ Stable pressure'}</p>
+                    </div>
+                </div>
+                <div class="pattern-item ${patterns.sustainedMotion ? 'active' : ''}">
+                    <div class="pattern-icon">📳</div>
+                    <div>
+                        <strong>Sustained Ground Motion</strong>
+                        <p>${patterns.sustainedMotion ? '⚠️ DETECTED - Continuous ground movement' : '✅ No sustained motion'}</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('patterns').innerHTML = patternsHTML;
+        }
+
+        function displayConditions(conditions) {
+            if (!conditions) {
+                document.getElementById('conditions').innerHTML = '<p style="color: #999;">No condition data available</p>';
+                return;
+            }
+
+            document.getElementById('conditions').innerHTML = `
+                <div class="condition-box">
+                    <div class="condition-value">🌡️ ${conditions.temperature?.toFixed(1) || 'N/A'}°C</div>
+                    <div class="condition-label">Temperature</div>
+                </div>
+                <div class="condition-box">
+                    <div class="condition-value">💧 ${conditions.humidity?.toFixed(1) || 'N/A'}%</div>
+                    <div class="condition-label">Humidity</div>
+                </div>
+                <div class="condition-box">
+                    <div class="condition-value">🌍 ${conditions.pressure?.toFixed(1) || 'N/A'} hPa</div>
+                    <div class="condition-label">Pressure</div>
+                </div>
+                <div class="condition-box">
+                    <div class="condition-value">${conditions.motion ? '✅ Yes' : '❌ No'}</div>
+                    <div class="condition-label">Motion Detected</div>
+                </div>
+            `;
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadPrediction, 30000);
+
+        // Load on page load
+        loadPrediction();
+    </script>
+</body>
+</html>
