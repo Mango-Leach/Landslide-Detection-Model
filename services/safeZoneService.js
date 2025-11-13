@@ -255,16 +255,16 @@ function formatTime(minutes) {
  */
 function generateRouteInstructions(direction, distance, safeZone) {
     const steps = [
-        `📍 Current Location`,
-        `🧭 Head ${direction} for ${distance} km`,
-        `🏢 Destination: ${safeZone.name}`,
-        `📍 ${safeZone.location.address}`,
-        `📞 Emergency Contact: ${safeZone.contact}`
+        ` Current Location`,
+        ` Head ${direction} for ${distance} km`,
+        ` Destination: ${safeZone.name}`,
+        ` ${safeZone.location.address}`,
+        ` Emergency Contact: ${safeZone.contact}`
     ];
     
     // Add elevation warning if significant climb
     if (safeZone.elevation > 600) {
-        steps.splice(2, 0, `⚠️ Moderate uphill climb (elevation: ${safeZone.elevation}m)`);
+        steps.splice(2, 0, ` Moderate uphill climb (elevation: ${safeZone.elevation}m)`);
     }
     
     return steps;
@@ -362,7 +362,7 @@ function addSafeZone(zoneData) {
     };
     
     safeZones.push(newZone);
-    console.log(`✅ New safe zone added: ${newZone.name} (${newZone.id})`);
+    console.log(` New safe zone added: ${newZone.name} (${newZone.id})`);
     return newZone;
 }
 
@@ -392,7 +392,7 @@ function updateSafeZone(id, updates) {
     
     safeZones[index].updatedAt = new Date().toISOString();
     
-    console.log(`✅ Safe zone updated: ${safeZones[index].name} (${id})`);
+    console.log(` Safe zone updated: ${safeZones[index].name} (${id})`);
     return safeZones[index];
 }
 
@@ -409,7 +409,7 @@ function deleteSafeZone(id) {
     }
     
     const deletedZone = safeZones.splice(index, 1)[0];
-    console.log(`🗑️ Safe zone deleted: ${deletedZone.name} (${id})`);
+    console.log(` Safe zone deleted: ${deletedZone.name} (${id})`);
     return true;
 }
 

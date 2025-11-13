@@ -11,19 +11,19 @@ class SMSService {
         if (this.enabled && this.accountSid && this.authToken && this.fromNumber) {
             try {
                 this.client = twilio(this.accountSid, this.authToken);
-                console.log('✅ SMS service initialized successfully (Twilio)');
+                console.log(' SMS service initialized successfully (Twilio)');
             } catch (error) {
-                console.error('❌ Failed to initialize SMS service:', error.message);
+                console.error(' Failed to initialize SMS service:', error.message);
                 this.enabled = false;
             }
         } else {
-            console.log('⚠️  SMS service disabled (configure Twilio credentials in .env)');
+            console.log('  SMS service disabled (configure Twilio credentials in .env)');
         }
     }
 
     async sendAlert(alertData, phoneNumbers) {
         if (!this.enabled || !this.client) {
-            console.log('⚠️  SMS service not configured, skipping SMS alerts');
+            console.log('  SMS service not configured, skipping SMS alerts');
             return;
         }
 
@@ -38,10 +38,10 @@ class SMSService {
                     to: phoneNumber
                 });
                 
-                console.log(`✅ SMS sent to ${phoneNumber} (SID: ${result.sid})`);
+                console.log(` SMS sent to ${phoneNumber} (SID: ${result.sid})`);
                 results.push({ phoneNumber, success: true, sid: result.sid });
             } catch (error) {
-                console.error(`❌ Failed to send SMS to ${phoneNumber}:`, error.message);
+                console.error(` Failed to send SMS to ${phoneNumber}:`, error.message);
                 results.push({ phoneNumber, success: false, error: error.message });
             }
         }
@@ -51,7 +51,7 @@ class SMSService {
 
     async sendOTP(phoneNumber, otp) {
         if (!this.enabled || !this.client) {
-            console.log('⚠️  SMS service not configured, cannot send OTP');
+            console.log('  SMS service not configured, cannot send OTP');
             return false;
         }
 
@@ -64,10 +64,10 @@ class SMSService {
                 to: phoneNumber
             });
             
-            console.log(`✅ OTP sent to ${phoneNumber} (SID: ${result.sid})`);
+            console.log(` OTP sent to ${phoneNumber} (SID: ${result.sid})`);
             return true;
         } catch (error) {
-            console.error(`❌ Failed to send OTP to ${phoneNumber}:`, error.message);
+            console.error(` Failed to send OTP to ${phoneNumber}:`, error.message);
             return false;
         }
     }

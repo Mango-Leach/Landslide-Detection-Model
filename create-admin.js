@@ -8,9 +8,9 @@ const createAdmin = async () => {
         // Connect to MongoDB (or use in-memory)
         if (process.env.MONGODB_URI) {
             await mongoose.connect(process.env.MONGODB_URI);
-            console.log('✅ Connected to MongoDB');
+            console.log(' Connected to MongoDB');
         } else {
-            console.log('⚠️  Using in-memory database (data will be lost on restart)');
+            console.log('  Using in-memory database (data will be lost on restart)');
         }
 
         // Admin credentials
@@ -24,7 +24,7 @@ const createAdmin = async () => {
         // Check if admin exists
         const existing = await User.findOne({ email: adminData.email });
         if (existing) {
-            console.log('❌ Admin user already exists!');
+            console.log(' Admin user already exists!');
             console.log('   Email:', adminData.email);
             process.exit(0);
         }
@@ -33,17 +33,17 @@ const createAdmin = async () => {
         const admin = new User(adminData);
         await admin.save();
 
-        console.log('\n✅ Admin user created successfully!');
+        console.log('\n Admin user created successfully!');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('📧 Email:', adminData.email);
-        console.log('🔑 Password:', adminData.password);
-        console.log('👤 Username:', adminData.username);
+        console.log(' Email:', adminData.email);
+        console.log(' Password:', adminData.password);
+        console.log(' Username:', adminData.username);
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('\n🌐 Login at: http://localhost:3000/login.html\n');
+        console.log('\n Login at: http://localhost:3000/login.html\n');
 
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error creating admin:', error.message);
+        console.error(' Error creating admin:', error.message);
         process.exit(1);
     }
 };

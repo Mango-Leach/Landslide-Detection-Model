@@ -8,15 +8,15 @@ const cleanupUsers = async () => {
         // Connect to MongoDB (or use in-memory)
         if (process.env.MONGODB_URI) {
             await mongoose.connect(process.env.MONGODB_URI);
-            console.log('✅ Connected to MongoDB');
+            console.log(' Connected to MongoDB');
         } else {
-            console.log('⚠️  Using in-memory database');
-            console.log('⚠️  Data cleanup only affects current session');
+            console.log('  Using in-memory database');
+            console.log('  Data cleanup only affects current session');
         }
 
         // Get all users
         const allUsers = await User.find({});
-        console.log(`\n📊 Total users in database: ${allUsers.length}`);
+        console.log(`\n Total users in database: ${allUsers.length}`);
 
         // Define users to keep
         const keepEmails = ['demo@iot.com', 'admin@iot-dashboard.com'];
@@ -26,22 +26,22 @@ const cleanupUsers = async () => {
             email: { $nin: keepEmails }
         });
 
-        console.log(`\n🗑️  Deleted ${deleteResult.deletedCount} user(s)`);
+        console.log(`\n  Deleted ${deleteResult.deletedCount} user(s)`);
 
         // Show remaining users
         const remainingUsers = await User.find({});
-        console.log(`\n✅ Remaining users: ${remainingUsers.length}`);
+        console.log(`\n Remaining users: ${remainingUsers.length}`);
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         
         remainingUsers.forEach(user => {
-            console.log(`👤 ${user.username} (${user.email}) - Role: ${user.role}`);
+            console.log(` ${user.username} (${user.email}) - Role: ${user.role}`);
         });
         
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
         process.exit(0);
     } catch (error) {
-        console.error('❌ Error cleaning up users:', error.message);
+        console.error(' Error cleaning up users:', error.message);
         process.exit(1);
     }
 };
