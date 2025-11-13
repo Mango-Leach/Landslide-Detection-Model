@@ -46,8 +46,7 @@ const RAINFALL_THRESHOLDS = {
  */
 async function getCurrentRainfall(latitude, longitude) {
     // Check if API key is configured
-    if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === '7930cf2a0521be60817b1bddf3052183') {
-
+    if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === 'YOUR_API_KEY_HERE') {
         console.log('ℹ️  OpenWeather API key not configured - rainfall features disabled');
         return null;
     }

@@ -79,6 +79,40 @@ app.use(session({
 app.use('/api/auth', authRoutes);
 app.use('/api/otp', otpRoutes);
 
+// 🌧️ Rainfall API endpoint - uses user's GPS location
+app.get('/api/rainfall/current', async (req, res) => {
+    try {
+        // Get coordinates from query params (user's GPS) or use defaults
+        const latitude = parseFloat(req.query.latitude) || parseFloat(process.env.RAINFALL_LATITUDE) || 18.5204;
+        const longitude = parseFloat(req.query.longitude) || parseFloat(process.env.RAINFALL_LONGITUDE) || 73.8567;
+        
+        console.log(`🌧️ Fetching rainfall for GPS: ${latitude}, ${longitude}`);
+        
+        // Fetch rainfall data for the specific location
+        const rainfallData = await getRainfallData(latitude, longitude);
+        
+        res.json({
+            currentIntensity: rainfallData?.currentIntensity || 0,
+            cumulative3h: rainfallData?.cumulative3h || 0,
+            cumulative24h: rainfallData?.estimated24h || 0,
+            cumulative48h: rainfallData?.estimated48h || 0,
+            location: rainfallData?.locationName || `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`,
+            latitude: latitude,
+            longitude: longitude,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error fetching rainfall data:', error);
+        res.status(500).json({
+            error: 'Failed to fetch rainfall data',
+            currentIntensity: 0,
+            cumulative24h: 0,
+            cumulative48h: 0,
+            location: 'Unknown'
+        });
+    }
+});
+
 // WebSocket connection handling
 wss.on('connection', (ws) => {
     console.log('🔌 New client connected');
@@ -413,41 +447,51 @@ let rainfallCache = {
 };
 const RAINFALL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-async function getRainfallData() {
+async function getRainfallData(latitude = null, longitude = null) {
     const now = Date.now();
     
-    // Return cached data if still fresh
-    if (rainfallCache.data && (now - rainfallCache.lastFetch) < RAINFALL_CACHE_DURATION) {
+    // Use provided coordinates or fall back to cached/default location
+    const lat = latitude || rainfallCache.location.latitude;
+    const lon = longitude || rainfallCache.location.longitude;
+    
+    // Return cached data if same location and still fresh
+    const isSameLocation = (lat === rainfallCache.location.latitude && lon === rainfallCache.location.longitude);
+    if (rainfallCache.data && isSameLocation && (now - rainfallCache.lastFetch) < RAINFALL_CACHE_DURATION) {
         return rainfallCache.data;
     }
     
     try {
-        // Fetch current rainfall from OpenWeather API
-        const currentData = await rainfallService.getCurrentRainfall(
-            rainfallCache.location.latitude,
-            rainfallCache.location.longitude
-        );
+        // Fetch current rainfall from OpenWeather API for the specific location
+        const currentData = await rainfallService.getCurrentRainfall(lat, lon);
         
         if (currentData) {
+            // Get location name from the API response
+            const locationName = currentData.name || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
+            
             // Extract rainfall data
             const rainfallInfo = {
                 currentIntensity: currentData.rainfall.lastHour || 0, // mm/hr
                 cumulative3h: currentData.rainfall.last3Hours || 0,
-                cumulative24h: 0, // We'll track this ourselves
-                cumulative48h: 0, // We'll track this ourselves
+                estimated24h: 0, // We'll estimate this
+                estimated48h: 0, // We'll estimate this
+                locationName: locationName,
+                latitude: lat,
+                longitude: lon,
                 lastUpdate: new Date(),
                 source: 'OpenWeatherMap'
             };
             
-            // TODO: Implement 24h/48h cumulative tracking with database
-            // For now, estimate from current intensity
-            rainfallInfo.cumulative24h = rainfallInfo.currentIntensity * 24; // Rough estimate
-            rainfallInfo.cumulative48h = rainfallInfo.cumulative24h * 2; // Rough estimate
+            // Estimate 24h/48h cumulative from current intensity
+            // TODO: Implement proper 24h/48h cumulative tracking with database
+            rainfallInfo.estimated24h = rainfallInfo.currentIntensity * 24; // Rough estimate
+            rainfallInfo.estimated48h = rainfallInfo.estimated24h * 2; // Rough estimate
             
+            // Update cache with new location data
             rainfallCache.data = rainfallInfo;
             rainfallCache.lastFetch = now;
+            rainfallCache.location = { latitude: lat, longitude: lon };
             
-            console.log(`🌧️ Rainfall updated: ${rainfallInfo.currentIntensity}mm/hr (24h: ${rainfallInfo.cumulative24h.toFixed(1)}mm)`);
+            console.log(`🌧️ Rainfall updated for ${locationName}: ${rainfallInfo.currentIntensity}mm/hr (24h: ${rainfallInfo.estimated24h.toFixed(1)}mm)`);
             return rainfallInfo;
         }
     } catch (error) {

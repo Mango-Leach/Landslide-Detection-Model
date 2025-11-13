@@ -570,6 +570,9 @@ function updateStatCards() {
     document.getElementById('pressureValue').textContent = latest.pressure?.toFixed(1) || '--';
     updateTrend('pressureTrend', latest.pressure, previous.pressure, ' hPa');
     
+    // Rainfall - Fetch from server
+    fetchRainfallData();
+    
     // Data points
     document.getElementById('dataPoints').textContent = allData.length;
     const progress = (allData.length / 1000) * 100;
@@ -1502,6 +1505,9 @@ function getUserLocation() {
                 // Reload all location-dependent data
                 loadSafeZones();
                 loadRainfallForecast();
+                
+                // 🌧️ Fetch rainfall data for user's actual location
+                fetchRainfallData();
             },
             (error) => {
                 console.warn('⚠️ GPS error:', error.message);
@@ -1514,6 +1520,9 @@ function getUserLocation() {
                 } else if (error.code === error.TIMEOUT) {
                     showNotification('GPS timeout. Using default location.', 'warning');
                 }
+                
+                // 🌧️ Still fetch rainfall for default location
+                fetchRainfallData();
             },
             {
                 enableHighAccuracy: true,
@@ -1524,6 +1533,9 @@ function getUserLocation() {
     } else {
         console.warn('⚠️ Geolocation not supported by browser');
         showNotification('GPS not supported. Using default location.', 'warning');
+        
+        // 🌧️ Fetch rainfall for default location
+        fetchRainfallData();
     }
 }
 
@@ -1920,4 +1932,81 @@ setTimeout(() => {
     loadEnhancedRisk();
     loadRainfallForecast();
     loadSafeZones();
-}, 3000);
+}, 2000);
+
+// 🌧️ Fetch Rainfall Data from OpenWeather API
+let rainfallDataCache = null;
+let rainfallLastFetch = 0;
+const RAINFALL_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+async function fetchRainfallData() {
+    // Use cache if available and fresh
+    if (rainfallDataCache && (Date.now() - rainfallLastFetch) < RAINFALL_CACHE_DURATION) {
+        updateRainfallDisplay(rainfallDataCache);
+        return;
+    }
+    
+    try {
+        // 📍 Use user's GPS location for rainfall data
+        const lat = userLocation.latitude;
+        const lon = userLocation.longitude;
+        const response = await fetch(`/api/rainfall/current?latitude=${lat}&longitude=${lon}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch rainfall data');
+        }
+        
+        const data = await response.json();
+        rainfallDataCache = data;
+        rainfallLastFetch = Date.now();
+        updateRainfallDisplay(data);
+    } catch (error) {
+        console.error('Error fetching rainfall data:', error);
+        // Display "--" if API fails
+        document.getElementById('rainfallValue').textContent = '--';
+        document.getElementById('rainfall24h').textContent = '--';
+        document.getElementById('rainfall48h').textContent = '--';
+        document.getElementById('rainfallLocation').textContent = 'API Unavailable';
+    }
+}
+
+function updateRainfallDisplay(data) {
+    const rainfallValue = document.getElementById('rainfallValue');
+    const rainfall24h = document.getElementById('rainfall24h');
+    const rainfall48h = document.getElementById('rainfall48h');
+    const rainfallLocation = document.getElementById('rainfallLocation');
+    
+    if (rainfallValue) {
+        rainfallValue.textContent = data.currentIntensity?.toFixed(1) || '0.0';
+    }
+    
+    if (rainfall24h) {
+        rainfall24h.textContent = data.cumulative24h?.toFixed(1) || '0.0';
+        // Color code based on threshold
+        if (data.cumulative24h >= 100) {
+            rainfall24h.style.color = '#ff4444'; // Red - Critical
+        } else if (data.cumulative24h >= 50) {
+            rainfall24h.style.color = '#ff9800'; // Orange - Warning
+        } else {
+            rainfall24h.style.color = '#4CAF50'; // Green - Normal
+        }
+    }
+    
+    if (rainfall48h) {
+        rainfall48h.textContent = data.cumulative48h?.toFixed(1) || '0.0';
+        // Color code based on threshold
+        if (data.cumulative48h >= 150) {
+            rainfall48h.style.color = '#ff4444'; // Red - Critical
+        } else if (data.cumulative48h >= 75) {
+            rainfall48h.style.color = '#ff9800'; // Orange - Warning
+        } else {
+            rainfall48h.style.color = '#4CAF50'; // Green - Normal
+        }
+    }
+    
+    if (rainfallLocation) {
+        rainfallLocation.textContent = data.location || 'Unknown';
+    }
+}
+
+// Fetch rainfall data every 10 minutes
+setInterval(fetchRainfallData, RAINFALL_CACHE_DURATION);

@@ -443,6 +443,8 @@ body {
 
 .stat-card.temperature::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
 .stat-card.humidity::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+.stat-card.pressure::before { background: linear-gradient(90deg, #8b5cf6, #a855f7); }
+.stat-card.rainfall::before { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
 .stat-card.light::before { background: linear-gradient(90deg, #f59e0b, #eab308); }
 .stat-card.data-points::before { background: linear-gradient(90deg, #8b5cf6, #6366f1); }
 
