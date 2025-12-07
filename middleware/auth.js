@@ -47,12 +47,4 @@ const optionalAuth = async (req, res, next) => {
     next();
 };
 
-const adminOnly = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).json({ error: 'Admin access required' });
-    }
-};
-
-module.exports = { authMiddleware, optionalAuth, adminOnly };
+module.exports = { authMiddleware, optionalAuth };

@@ -233,28 +233,6 @@ body {
     background: var(--light);
 }
 
-.search-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--light);
-    padding: 10px 15px;
-    border-radius: 10px;
-    min-width: 250px;
-}
-
-.search-box i {
-    color: var(--gray);
-}
-
-.search-box input {
-    border: none;
-    background: none;
-    outline: none;
-    width: 100%;
-    color: var(--dark);
-}
-
 .status-badge {
     display: flex;
     align-items: center;
@@ -1213,10 +1191,6 @@ input:checked + .slider:before {
     
     .header-left h1 {
         font-size: 1.2rem;
-    }
-    
-    .search-box {
-        display: none;
     }
     
     .stats-grid {

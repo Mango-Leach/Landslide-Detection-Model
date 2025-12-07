@@ -1,0 +1,456 @@
+{
+  "landslideHistory": [
+    {
+      "temperature": 18.5,
+      "humidity": 98,
+      "pressure": 945,
+      "motion": 1,
+      "soilMoisture": 95,
+      "timestamp": "2025-11-19T15:05:44.763Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26.2,
+      "humidity": 95,
+      "pressure": 985,
+      "motion": 1,
+      "soilMoisture": 92,
+      "timestamp": "2025-11-19T15:05:44.763Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 24.8,
+      "humidity": 92,
+      "pressure": 992,
+      "motion": 1,
+      "soilMoisture": 88,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 19.3,
+      "humidity": 89,
+      "pressure": 920,
+      "motion": 1,
+      "soilMoisture": 85,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 21.7,
+      "humidity": 91,
+      "pressure": 890,
+      "motion": 1,
+      "soilMoisture": 87,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 8.2,
+      "humidity": 65,
+      "pressure": 850,
+      "motion": 1,
+      "soilMoisture": 70,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.4,
+      "humidity": 93,
+      "pressure": 990,
+      "motion": 1,
+      "soilMoisture": 89,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 23.1,
+      "humidity": 88,
+      "pressure": 880,
+      "motion": 0,
+      "soilMoisture": 83,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 22.6,
+      "humidity": 90,
+      "pressure": 870,
+      "motion": 1,
+      "soilMoisture": 86,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 18.9,
+      "humidity": 82,
+      "pressure": 860,
+      "motion": 1,
+      "soilMoisture": 72,
+      "timestamp": "2025-11-19T15:05:44.764Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26,
+      "humidity": 95,
+      "pressure": 985,
+      "motion": 1,
+      "soilMoisture": 92,
+      "timestamp": "2025-11-19T15:05:44.769Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.5,
+      "humidity": 93,
+      "pressure": 990,
+      "motion": 1,
+      "soilMoisture": 89,
+      "timestamp": "2025-11-19T15:05:44.775Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 24.8,
+      "humidity": 94,
+      "pressure": 988,
+      "motion": 1,
+      "soilMoisture": 90,
+      "timestamp": "2025-11-19T15:05:44.777Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.2,
+      "humidity": 92,
+      "pressure": 991,
+      "motion": 0,
+      "soilMoisture": 88,
+      "timestamp": "2025-11-19T15:05:44.780Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26.1,
+      "humidity": 91,
+      "pressure": 987,
+      "motion": 0,
+      "soilMoisture": 87,
+      "timestamp": "2025-11-19T15:05:44.783Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 22,
+      "humidity": 60,
+      "pressure": 1010,
+      "motion": 0,
+      "soilMoisture": 40,
+      "timestamp": "2025-11-19T15:05:44.786Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25,
+      "humidity": 55,
+      "pressure": 1013,
+      "motion": 0,
+      "soilMoisture": 35,
+      "timestamp": "2025-11-19T15:05:44.789Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 20,
+      "humidity": 65,
+      "pressure": 1008,
+      "motion": 0,
+      "soilMoisture": 45,
+      "timestamp": "2025-11-19T15:05:44.792Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 23,
+      "humidity": 58,
+      "pressure": 1012,
+      "motion": 0,
+      "soilMoisture": 38,
+      "timestamp": "2025-11-19T15:05:44.795Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 21,
+      "humidity": 62,
+      "pressure": 1009,
+      "motion": 0,
+      "soilMoisture": 42,
+      "timestamp": "2025-11-19T15:05:44.797Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 18.5,
+      "humidity": 98,
+      "pressure": 945,
+      "motion": 1,
+      "soilMoisture": 95,
+      "timestamp": "2025-11-28T15:20:29.638Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26.2,
+      "humidity": 95,
+      "pressure": 985,
+      "motion": 1,
+      "soilMoisture": 92,
+      "timestamp": "2025-11-28T15:20:29.645Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 24.8,
+      "humidity": 92,
+      "pressure": 992,
+      "motion": 1,
+      "soilMoisture": 88,
+      "timestamp": "2025-11-28T15:20:29.650Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 19.3,
+      "humidity": 89,
+      "pressure": 920,
+      "motion": 1,
+      "soilMoisture": 85,
+      "timestamp": "2025-11-28T15:20:29.655Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 21.7,
+      "humidity": 91,
+      "pressure": 890,
+      "motion": 1,
+      "soilMoisture": 87,
+      "timestamp": "2025-11-28T15:20:29.668Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 8.2,
+      "humidity": 65,
+      "pressure": 850,
+      "motion": 1,
+      "soilMoisture": 70,
+      "timestamp": "2025-11-28T15:20:29.675Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.4,
+      "humidity": 93,
+      "pressure": 990,
+      "motion": 1,
+      "soilMoisture": 89,
+      "timestamp": "2025-11-28T15:20:29.681Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 23.1,
+      "humidity": 88,
+      "pressure": 880,
+      "motion": 0,
+      "soilMoisture": 83,
+      "timestamp": "2025-11-28T15:20:29.689Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 22.6,
+      "humidity": 90,
+      "pressure": 870,
+      "motion": 1,
+      "soilMoisture": 86,
+      "timestamp": "2025-11-28T15:20:29.696Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 18.9,
+      "humidity": 82,
+      "pressure": 860,
+      "motion": 1,
+      "soilMoisture": 72,
+      "timestamp": "2025-11-28T15:20:29.703Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26,
+      "humidity": 95,
+      "pressure": 985,
+      "motion": 1,
+      "soilMoisture": 92,
+      "timestamp": "2025-11-28T15:20:29.709Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.5,
+      "humidity": 93,
+      "pressure": 990,
+      "motion": 1,
+      "soilMoisture": 89,
+      "timestamp": "2025-11-28T15:20:29.715Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 24.8,
+      "humidity": 94,
+      "pressure": 988,
+      "motion": 1,
+      "soilMoisture": 90,
+      "timestamp": "2025-11-28T15:20:29.722Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.2,
+      "humidity": 92,
+      "pressure": 991,
+      "motion": 0,
+      "soilMoisture": 88,
+      "timestamp": "2025-11-28T15:20:29.727Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26.1,
+      "humidity": 91,
+      "pressure": 987,
+      "motion": 0,
+      "soilMoisture": 87,
+      "timestamp": "2025-11-28T15:20:29.732Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 22,
+      "humidity": 60,
+      "pressure": 1010,
+      "motion": 0,
+      "soilMoisture": 40,
+      "timestamp": "2025-11-28T15:20:29.742Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25,
+      "humidity": 55,
+      "pressure": 1013,
+      "motion": 0,
+      "soilMoisture": 35,
+      "timestamp": "2025-11-28T15:20:29.749Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 20,
+      "humidity": 65,
+      "pressure": 1008,
+      "motion": 0,
+      "soilMoisture": 45,
+      "timestamp": "2025-11-28T15:20:29.755Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 23,
+      "humidity": 58,
+      "pressure": 1012,
+      "motion": 0,
+      "soilMoisture": 38,
+      "timestamp": "2025-11-28T15:20:29.761Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 21,
+      "humidity": 62,
+      "pressure": 1009,
+      "motion": 0,
+      "soilMoisture": 42,
+      "timestamp": "2025-11-28T15:20:29.768Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 18.5,
+      "humidity": 98,
+      "pressure": 945,
+      "motion": 1,
+      "soilMoisture": 95,
+      "timestamp": "2025-12-03T16:56:49.575Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 26.2,
+      "humidity": 95,
+      "pressure": 985,
+      "motion": 1,
+      "soilMoisture": 92,
+      "timestamp": "2025-12-03T16:56:57.599Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 24.8,
+      "humidity": 92,
+      "pressure": 992,
+      "motion": 1,
+      "soilMoisture": 88,
+      "timestamp": "2025-12-03T16:57:05.598Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 19.3,
+      "humidity": 89,
+      "pressure": 920,
+      "motion": 1,
+      "soilMoisture": 85,
+      "timestamp": "2025-12-03T16:57:13.612Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 21.7,
+      "humidity": 91,
+      "pressure": 890,
+      "motion": 1,
+      "soilMoisture": 87,
+      "timestamp": "2025-12-03T16:57:21.603Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 8.2,
+      "humidity": 65,
+      "pressure": 850,
+      "motion": 1,
+      "soilMoisture": 70,
+      "timestamp": "2025-12-03T16:57:29.634Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 25.4,
+      "humidity": 93,
+      "pressure": 990,
+      "motion": 1,
+      "soilMoisture": 89,
+      "timestamp": "2025-12-03T16:57:37.642Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 23.1,
+      "humidity": 88,
+      "pressure": 880,
+      "motion": 0,
+      "soilMoisture": 83,
+      "timestamp": "2025-12-03T16:57:45.649Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 22.6,
+      "humidity": 90,
+      "pressure": 870,
+      "motion": 1,
+      "soilMoisture": 86,
+      "timestamp": "2025-12-03T16:57:53.697Z",
+      "outcome": 1
+    },
+    {
+      "temperature": 18.9,
+      "humidity": 82,
+      "pressure": 860,
+      "motion": 1,
+      "soilMoisture": 72,
+      "timestamp": "2025-12-03T16:58:01.697Z",
+      "outcome": 1
+    }
+  ],
+  "lastUpdated": "2025-12-07T09:25:21.489Z",
+  "totalEventsRecorded": 50
+}

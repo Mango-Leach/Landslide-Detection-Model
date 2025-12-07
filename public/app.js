@@ -64,7 +64,7 @@ function connectWebSocket() {
     ws.onopen = () => {
         console.log('Connected to server');
         updateStatus(true);
-        addNotification('Connected to IoT Dashboard', 'success');
+        addNotification('Connected to IntelliSlide', 'success');
     };
     
     ws.onmessage = (event) => {
@@ -936,8 +936,8 @@ function exportData(format) {
     
     if (format === 'csv') {
         exportCSV();
-    } else if (format === 'excel') {
-        exportExcel();
+    } else if (format === 'pdf') {
+        exportPDF();
     } else if (format === 'json') {
         exportJSON();
     }
@@ -958,21 +958,72 @@ function exportCSV() {
     downloadFile(csvContent, 'iot-data.csv', 'text/csv');
 }
 
-function exportExcel() {
-    const worksheet_data = [
-        ['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Pressure (hPa)'],
-        ...allData.map(d => [
-            new Date(d.timestamp).toLocaleString(),
-            d.temperature || '',
-            d.humidity || '',
-            d.pressure || ''
-        ])
-    ];
+function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
     
-    const ws = XLSX.utils.aoa_to_sheet(worksheet_data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'IoT Data');
-    XLSX.writeFile(wb, 'iot-data.xlsx');
+    // Add title
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text('IntelliSlide - Sensor Data Report', 14, 22);
+    
+    // Add metadata
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Total Records: ${allData.length}`, 14, 36);
+    
+    // Add device location if available
+    if (deviceLocation.lat && deviceLocation.lon) {
+        const region = determineRegionFromCoords(deviceLocation.lat, deviceLocation.lon);
+        doc.text(`Location: ${deviceLocation.lat.toFixed(4)}°N, ${deviceLocation.lon.toFixed(4)}°E (${region})`, 14, 42);
+    }
+    
+    // Prepare table data
+    const tableData = allData.map(d => [
+        new Date(d.timestamp).toLocaleString(),
+        d.temperature ? d.temperature.toFixed(2) : 'N/A',
+        d.humidity ? d.humidity.toFixed(2) : 'N/A',
+        d.pressure ? d.pressure.toFixed(2) : 'N/A'
+    ]);
+    
+    // Add table
+    doc.autoTable({
+        head: [['Timestamp', 'Temperature (°C)', 'Humidity (%)', 'Pressure (hPa)']],
+        body: tableData,
+        startY: deviceLocation.lat ? 48 : 42,
+        theme: 'striped',
+        headStyles: {
+            fillColor: [76, 175, 80],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        },
+        styles: {
+            fontSize: 9,
+            cellPadding: 3
+        },
+        alternateRowStyles: {
+            fillColor: [245, 245, 245]
+        },
+        margin: { top: 10 }
+    });
+    
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Page ${i} of ${pageCount} | IntelliSlide System`,
+            doc.internal.pageSize.getWidth() / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: 'center' }
+        );
+    }
+    
+    // Save the PDF
+    doc.save('intellislide-data.pdf');
 }
 
 function exportJSON() {
@@ -1327,7 +1378,7 @@ function handleServerAlert(alert) {
     addNotification(alert.message, alert.severity);
     
     // Show browser notification
-    const title = `IoT Alert: ${alert.type.toUpperCase()}`;
+    const title = `IntelliSlide Alert: ${alert.type.toUpperCase()}`;
     showBrowserNotification(title, alert.message);
     
     // Speak alert if voice is enabled
@@ -1775,135 +1826,6 @@ function displayEnhancedRisk(data) {
     `;
 }
 
-// 🗺️ Load GPS Safe Zones
-async function loadSafeZones() {
-    try {
-        console.log('🗺️ Loading safe zones for location:', userLocation);
-        const url = `/api/evacuation-plan?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`;
-        console.log('📡 Fetching:', url);
-        
-        const response = await fetch(url);
-        console.log('📥 Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ API Error:', errorText);
-            throw new Error('Safe zones unavailable: ' + response.status);
-        }
-        
-        const data = await response.json();
-        console.log('✅ Safe zones data received:', data);
-        displaySafeZones(data);
-    } catch (error) {
-        console.error('❌ Error loading safe zones:', error);
-        document.getElementById('safe-zones-content').innerHTML = `
-            <div style="text-align: center; opacity: 0.8; padding: 30px;">
-                <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                <div>Safe zone data unavailable</div>
-                <div style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;">
-                    Error: ${error.message}
-                </div>
-            </div>
-        `;
-    }
-}
-
-function displaySafeZones(data) {
-    const container = document.getElementById('safe-zones-content');
-    
-    if (!data || !data.primaryShelter) {
-        container.innerHTML = '<div style="text-align: center; opacity: 0.8;">No safe zone data</div>';
-        return;
-    }
-    
-    const nearest = data.primaryShelter;
-    const alternatives = data.alternativeShelters || [];
-    
-    container.innerHTML = `
-        <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; border-left: 5px solid #00C851;">
-            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px;">
-                🎯 Nearest Safe Zone: ${nearest.name}
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; font-weight: bold; color: #00C851;">${nearest.distance.toFixed(2)}</div>
-                    <div style="font-size: 0.8rem; opacity: 0.9;">km away</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; font-weight: bold; color: #00bcd4;">${nearest.route.walkingTime}</div>
-                    <div style="font-size: 0.8rem; opacity: 0.9;">walking</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; font-weight: bold; color: #ffbb33;">${nearest.route.drivingTime}</div>
-                    <div style="font-size: 0.8rem; opacity: 0.9;">driving</div>
-                </div>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">
-                    📍 ${nearest.location.address}
-                </div>
-                <div style="font-size: 0.85rem; opacity: 0.8;">
-                    🧭 Direction: ${nearest.direction} | Capacity: ${nearest.capacity} people
-                </div>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 5px;">✅ Available Facilities:</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-                    ${nearest.facilities.map(f => `
-                        <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem;">
-                            ${f}
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-            <a href="${nearest.route.googleMapsUrl}" target="_blank" 
-               style="display: inline-block; background: #4285f4; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-right: 10px;">
-                🗺️ Open in Google Maps
-            </a>
-            <div style="display: inline-block; background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 8px; font-size: 0.85rem;">
-                Score: ${nearest.score}/100
-            </div>
-        </div>
-        
-        <div style="font-weight: 600; margin-bottom: 15px; font-size: 1.1rem;">
-            🏥 Alternative Safe Zones:
-        </div>
-        <div style="display: grid; gap: 12px;">
-            ${alternatives.map(zone => `
-                <div style="background: rgba(255,255,255,0.08); border-radius: 10px; padding: 15px; border-left: 3px solid #00bcd4;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                        <div style="font-weight: 600; font-size: 0.95rem;">${zone.name}</div>
-                        <div style="font-size: 0.85rem; color: #00C851; font-weight: 600;">${zone.distance.toFixed(2)} km</div>
-                    </div>
-                    <div style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 8px;">
-                        📍 ${zone.location.address}
-                    </div>
-                    <div style="display: flex; gap: 15px; font-size: 0.8rem; opacity: 0.9;">
-                        <span>🚶 ${zone.route.walkingTime}</span>
-                        <span>🚗 ${zone.route.drivingTime}</span>
-                        <span>👥 ${zone.capacity} capacity</span>
-                    </div>
-                    <a href="${zone.route.googleMapsUrl}" target="_blank" 
-                       style="display: inline-block; margin-top: 10px; color: #4285f4; text-decoration: none; font-size: 0.8rem;">
-                        View on Map →
-                    </a>
-                </div>
-            `).join('')}
-        </div>
-        
-        <div style="margin-top: 20px; padding: 15px; background: rgba(255,187,51,0.15); border-radius: 10px; border-left: 4px solid #ffbb33;">
-            <div style="font-weight: 600; margin-bottom: 8px;">⚡ Quick Evacuation Tips:</div>
-            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; opacity: 0.95;">
-                <li>Move to higher ground immediately</li>
-                <li>Avoid valleys and steep slopes</li>
-                <li>Follow ${nearest.direction} direction to nearest shelter</li>
-                <li>Stay on paved roads when possible</li>
-                <li>Call emergency services: 112</li>
-            </ul>
-        </div>
-    `;
-}
-
 // Refresh functions
 function refreshEnhancedRisk() {
     loadEnhancedRisk();
@@ -1915,23 +1837,16 @@ function refreshRainfallForecast() {
     addNotification('Rainfall forecast refreshed', 'success');
 }
 
-function refreshSafeZones() {
-    loadSafeZones();
-    addNotification('Safe zones refreshed', 'success');
-}
-
 // Auto-refresh every 5 minutes
 setInterval(() => {
     loadEnhancedRisk();
     loadRainfallForecast();
-    loadSafeZones();
 }, 300000);
 
 // Load on initialization
 setTimeout(() => {
     loadEnhancedRisk();
     loadRainfallForecast();
-    loadSafeZones();
 }, 2000);
 
 // 🌧️ Fetch Rainfall Data from OpenWeather API
@@ -2010,3 +1925,306 @@ function updateRainfallDisplay(data) {
 
 // Fetch rainfall data every 10 minutes
 setInterval(fetchRainfallData, RAINFALL_CACHE_DURATION);
+
+// ========================================
+// 🗺️ 3D TERRAIN MAPPING & WEAK POINT DETECTION
+// ========================================
+
+let terrainScene, terrainCamera, terrainRenderer, terrainMesh;
+let weakPointMarkers = [];
+let terrainData = { slopes: [], weakPoints: [] };
+let deviceLocation = { lat: 30.0668, lon: 79.0193, elevation: 2500 };
+
+function init3DTerrain() {
+    const canvas = document.getElementById('terrain-3d-canvas');
+    if (!canvas || typeof THREE === 'undefined') {
+        console.warn('Three.js not loaded or canvas not found');
+        return;
+    }
+    
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight || 500;
+    
+    terrainScene = new THREE.Scene();
+    terrainScene.fog = new THREE.Fog(0x232526, 10, 50);
+    
+    terrainCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    terrainCamera.position.set(0, 8, 15);
+    terrainCamera.lookAt(0, 0, 0);
+    
+    terrainRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    terrainRenderer.setSize(width, height);
+    terrainRenderer.setClearColor(0x232526, 1);
+    
+    // Generate terrain
+    generateTerrain();
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    terrainScene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(5, 10, 5);
+    terrainScene.add(directionalLight);
+    
+    const pointLight = new THREE.PointLight(0x4CAF50, 0.8, 20);
+    pointLight.position.set(0, 5, 0);
+    terrainScene.add(pointLight);
+    
+    animate3DTerrain();
+    
+    // Update initial display
+    updateTerrainDisplay();
+}
+
+function generateTerrain() {
+    terrainData = { slopes: [], weakPoints: [] };
+    
+    const geometry = new THREE.PlaneGeometry(20, 20, 60, 60);
+    const vertices = geometry.attributes.position.array;
+    const colors = [];
+    
+    for (let i = 0; i < vertices.length; i += 3) {
+        const x = vertices[i];
+        const y = vertices[i + 1];
+        
+        // Create realistic slope terrain
+        const baseSlope = y * 0.8;
+        const noise1 = Math.sin(x * 0.3) * Math.cos(y * 0.4) * 1.5;
+        const noise2 = Math.sin(x * 0.8 + y * 0.6) * 0.8;
+        const roughness = Math.random() * 0.3;
+        
+        const elevation = baseSlope + noise1 + noise2 + roughness;
+        vertices[i + 2] = elevation;
+        
+        // Calculate slope angle
+        const dx = Math.abs(noise1);
+        const dy = Math.abs(baseSlope);
+        const slopeAngle = Math.atan2(Math.sqrt(dx*dx + dy*dy), 1) * (180 / Math.PI);
+        
+        terrainData.slopes.push({ x, y, elevation, slopeAngle });
+        
+        // Color based on slope angle (risk)
+        let color;
+        if (slopeAngle > 45) {
+            color = new THREE.Color(0xff0000); // Critical - red
+        } else if (slopeAngle > 30) {
+            color = new THREE.Color(0xff4400); // High risk - orange
+        } else if (slopeAngle > 15) {
+            color = new THREE.Color(0xffaa00); // Moderate - yellow
+        } else {
+            color = new THREE.Color(0x00ff00); // Stable - green
+        }
+        
+        colors.push(color.r, color.g, color.b);
+    }
+    
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    
+    const material = new THREE.MeshPhongMaterial({
+        vertexColors: true,
+        wireframe: false,
+        flatShading: true,
+        shininess: 0
+    });
+    
+    if (terrainMesh) {
+        terrainScene.remove(terrainMesh);
+    }
+    
+    terrainMesh = new THREE.Mesh(geometry, material);
+    terrainMesh.rotation.x = -Math.PI / 3;
+    terrainScene.add(terrainMesh);
+    
+    // Identify and mark weak points
+    identifyWeakPoints();
+    createWeakPointMarkers();
+}
+
+function identifyWeakPoints() {
+    terrainData.weakPoints = [];
+    
+    for (let i = 0; i < terrainData.slopes.length; i++) {
+        const point = terrainData.slopes[i];
+        
+        const isSteep = point.slopeAngle > 35;
+        const isHighElevation = point.elevation > 2;
+        const geologicalRisk = Math.random() < 0.15;
+        
+        if (isSteep && (isHighElevation || geologicalRisk)) {
+            terrainData.weakPoints.push({
+                x: point.x,
+                y: point.y,
+                elevation: point.elevation,
+                slopeAngle: point.slopeAngle,
+                riskFactor: Math.min(100, point.slopeAngle * 2)
+            });
+        }
+    }
+    
+    console.log(`🔍 Identified ${terrainData.weakPoints.length} weak points`);
+}
+
+function createWeakPointMarkers() {
+    // Clear existing markers
+    weakPointMarkers.forEach(marker => terrainScene.remove(marker));
+    weakPointMarkers = [];
+    
+    // Create 3D markers for weak points
+    terrainData.weakPoints.forEach(point => {
+        const markerGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+        const markerMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+        marker.position.set(point.x, point.y, point.elevation + 0.5);
+        marker.rotation.x = -Math.PI / 3;
+        
+        terrainScene.add(marker);
+        weakPointMarkers.push(marker);
+        
+        // Add warning pillar
+        const pillarGeometry = new THREE.CylinderGeometry(0.05, 0.05, 2, 8);
+        const pillarMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.4
+        });
+        
+        const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+        pillar.position.set(point.x, point.y, point.elevation + 1);
+        pillar.rotation.x = -Math.PI / 3;
+        
+        terrainScene.add(pillar);
+        weakPointMarkers.push(pillar);
+    });
+}
+
+function animate3DTerrain() {
+    requestAnimationFrame(animate3DTerrain);
+    
+    if (!terrainRenderer || !terrainScene || !terrainCamera) return;
+    
+    if (terrainMesh) {
+        terrainMesh.rotation.z += 0.001;
+    }
+    
+    // Animate weak point markers
+    weakPointMarkers.forEach((marker, i) => {
+        if (i % 2 === 0) { // Spheres
+            marker.scale.set(
+                1 + Math.sin(Date.now() * 0.005 + i) * 0.3,
+                1 + Math.sin(Date.now() * 0.005 + i) * 0.3,
+                1 + Math.sin(Date.now() * 0.005 + i) * 0.3
+            );
+            marker.material.opacity = 0.6 + Math.sin(Date.now() * 0.003 + i) * 0.4;
+        }
+    });
+    
+    terrainRenderer.render(terrainScene, terrainCamera);
+}
+
+function updateTerrainMap() {
+    const deviceName = document.getElementById('terrain-device-name').value;
+    const lat = parseFloat(document.getElementById('terrain-latitude').value);
+    const lon = parseFloat(document.getElementById('terrain-longitude').value);
+    const elev = parseFloat(document.getElementById('terrain-elevation').value);
+    
+    if (isNaN(lat) || isNaN(lon) || isNaN(elev)) {
+        alert('ERROR: Invalid coordinates. Please enter numeric values.');
+        return;
+    }
+    
+    deviceLocation = { lat, lon, elevation: elev };
+    
+    // Determine region
+    const region = determineRegionFromCoords(lat, lon);
+    
+    // Regenerate terrain
+    generateTerrain();
+    
+    // Update display
+    updateTerrainDisplay();
+    
+    // Send to server
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'location_update',
+            deviceName,
+            lat,
+            lon,
+            elevation: elev,
+            weakPoints: terrainData.weakPoints.length
+        }));
+    }
+    
+    console.log(`📍 Terrain updated: ${region}, ${terrainData.weakPoints.length} weak points`);
+}
+
+function updateTerrainDisplay() {
+    const lat = deviceLocation.lat;
+    const lon = deviceLocation.lon;
+    const region = determineRegionFromCoords(lat, lon);
+    
+    document.getElementById('terrain-coords-display').innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 3px;">COORDINATES LOCKED</div>
+        <div>LAT: ${lat.toFixed(4)}°N | LON: ${lon.toFixed(4)}°E</div>
+        <div>ZONE: <span id="terrain-region-name">${region.toUpperCase()}</span></div>
+        <div style="margin-top: 5px; color: #ff9800;">
+            <i class="fas fa-exclamation-triangle"></i> 
+            WEAK POINTS: <span id="terrain-weak-count">${terrainData.weakPoints.length}</span>
+        </div>
+    `;
+}
+
+function determineRegionFromCoords(lat, lon) {
+    if (lat >= 28 && lat <= 31 && lon >= 77 && lon <= 81) {
+        return 'uttarakhand, india';
+    } else if (lat >= 8 && lat <= 13 && lon >= 74 && lon <= 78) {
+        return 'kerala, india';
+    } else if (lat >= 17 && lat <= 21 && lon >= 72 && lon <= 77) {
+        return 'maharashtra, india';
+    } else if (lat >= 30 && lat <= 33 && lon >= 75 && lon <= 78) {
+        return 'himachal pradesh, india';
+    } else if (lat >= 24 && lat <= 27 && lon >= 87 && lon <= 92) {
+        return 'west bengal, india';
+    } else if (lat >= 12 && lat <= 16 && lon >= 74 && lon <= 78) {
+        return 'karnataka, india';
+    } else if (lat >= 25 && lat <= 26 && lon >= 90 && lon <= 92) {
+        return 'meghalaya, india';
+    } else if (lat >= 26.5 && lat <= 29.5 && lon >= 91 && lon <= 97) {
+        return 'arunachal pradesh, india';
+    } else if (lat >= 27 && lat <= 28.5 && lon >= 88 && lon <= 89) {
+        return 'sikkim, india';
+    } else {
+        return 'unknown region';
+    }
+}
+
+// Initialize terrain on page load
+if (typeof THREE !== 'undefined') {
+    setTimeout(() => {
+        init3DTerrain();
+    }, 1000); // Delay to ensure canvas is ready
+}
+
+// Handle window resize for terrain
+window.addEventListener('resize', () => {
+    if (terrainRenderer && terrainCamera) {
+        const canvas = document.getElementById('terrain-3d-canvas');
+        if (canvas) {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight || 500;
+            terrainRenderer.setSize(width, height);
+            terrainCamera.aspect = width / height;
+            terrainCamera.updateProjectionMatrix();
+        }
+    }
+});
+
+// 🔍 Search Bar Functionality
+

@@ -1,6 +1,6 @@
 """
 Python Script to Simulate Sensor Data
-This script generates random sensor data and sends it to the IoT Dashboard
+This script generates random sensor data and sends it to the IntelliSlide dashboard
 Useful for testing the dashboard without actual hardware
 """
 

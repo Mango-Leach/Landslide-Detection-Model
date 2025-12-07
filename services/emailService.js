@@ -49,7 +49,7 @@ class EmailService {
             const mailOptions = {
                 from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
                 to: recipients.join(','),
-                subject: `IoT Alert: ${alert.type.toUpperCase()} - ${alert.severity.toUpperCase()}`,
+                subject: `IntelliSlide Alert: ${alert.type.toUpperCase()} - ${alert.severity.toUpperCase()}`,
                 html: this.generateAlertHTML(alert)
             };
             
@@ -91,7 +91,7 @@ class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h2>🚨 IoT Dashboard Alert</h2>
+                        <h2>🚨 IntelliSlide Alert</h2>
                         <p>Severity: ${alert.severity.toUpperCase()}</p>
                     </div>
                     <div class="content">
@@ -103,10 +103,10 @@ class EmailService {
                             <p><strong>Device:</strong> ${alert.deviceId}</p>
                             <p><strong>Time:</strong> ${new Date(alert.timestamp).toLocaleString()}</p>
                         </div>
-                        <p>Please check your IoT Dashboard for more details.</p>
+                        <p>Please check your IntelliSlide dashboard for more details.</p>
                     </div>
                     <div class="footer">
-                        <p>This is an automated message from your IoT Dashboard</p>
+                        <p>This is an automated message from IntelliSlide</p>
                         <p>Do not reply to this email</p>
                     </div>
                 </div>
@@ -125,7 +125,7 @@ class EmailService {
             const mailOptions = {
                 from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
                 to: email,
-                subject: 'Your IoT Dashboard Verification Code',
+                subject: 'Your IntelliSlide Verification Code',
                 html: this.generateOTPHTML(otp, username)
             };
             
@@ -158,11 +158,11 @@ class EmailService {
                 <div class="container">
                     <div class="header">
                         <h2>🔐 Verification Code</h2>
-                        <p>IoT Dashboard</p>
+                        <p>IntelliSlide</p>
                     </div>
                     <div class="content">
-                        <p>Hello ${username || 'User'},</p>
-                        <p>Your verification code for IoT Dashboard is:</p>
+                        <p>Hello ${username},</p>
+                        <p>Your verification code for IntelliSlide is:</p>
                         <div class="otp-box">
                             <div class="otp-code">${otp}</div>
                             <p style="color: #666; font-size: 14px;">Enter this code to complete your login</p>
@@ -177,7 +177,7 @@ class EmailService {
                         </div>
                     </div>
                     <div class="footer">
-                        <p>This is an automated message from IoT Dashboard</p>
+                        <p>This is an automated message from IntelliSlide</p>
                         <p>Do not reply to this email</p>
                     </div>
                 </div>
@@ -193,7 +193,7 @@ class EmailService {
             const mailOptions = {
                 from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
                 to: recipients.join(','),
-                subject: 'IoT Dashboard - Daily Summary',
+                subject: 'IntelliSlide - Daily Summary',
                 html: this.generateSummaryHTML(stats)
             };
             
@@ -367,7 +367,7 @@ class EmailService {
                         <div class="action-section">
                             <h3>🎯 Required Admin Actions:</h3>
                             <ul>
-                                <li><strong>Verify sensor data</strong> in the IoT Dashboard immediately</li>
+                                <li><strong>Verify sensor data</strong> in the IntelliSlide dashboard immediately</li>
                                 <li><strong>Contact local authorities</strong> and emergency services</li>
                                 <li><strong>Initiate evacuation protocols</strong> for affected areas</li>
                                 <li><strong>Monitor real-time data</strong> for any changes in conditions</li>

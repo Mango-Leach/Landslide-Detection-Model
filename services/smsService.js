@@ -55,7 +55,7 @@ class SMSService {
             return false;
         }
 
-        const message = `Your IoT Dashboard verification code is: ${otp}\n\nThis code will expire in 5 minutes.\n\nDo not share this code with anyone.`;
+        const message = `Your IntelliSlide verification code is: ${otp}\n\nThis code will expire in 5 minutes.\n\nDo not share this code with anyone.`;
 
         try {
             const result = await this.client.messages.create({

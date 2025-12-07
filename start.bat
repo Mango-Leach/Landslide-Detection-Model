@@ -1,12 +1,12 @@
 @echo off
 echo.
 echo ╔════════════════════════════════════════╗
-echo ║       Starting IoT Dashboard           ║
+echo ║        Starting IntelliSlide           ║
 echo ╚════════════════════════════════════════╝
 echo.
 
 echo [1/2] Starting Node.js Server...
-start "IoT Dashboard Server" cmd /k "cd /d %~dp0 && node server-advanced.js"
+start "IntelliSlide Server" cmd /k "cd /d %~dp0 && node server-advanced.js"
 
 timeout /t 3 /nobreak > nul
 

@@ -1,7 +1,7 @@
 /*
  * Arduino with Ethernet Shield / WiFi Shield - HTTP POST Example
  * 
- * This example sends sensor data to the IoT Dashboard via HTTP POST requests
+ * This example sends sensor data to the IntelliSlide dashboard via HTTP POST requests
  * Works with: Arduino Uno + Ethernet Shield, Arduino MKR WiFi 1010, etc.
  * 
  * Hardware Connections:
@@ -41,7 +41,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) { ; }
   
-  Serial.println("Starting IoT Dashboard Client...");
+  Serial.println("Starting IntelliSlide Client...");
   
   // Initialize DHT sensor
   dht.begin();

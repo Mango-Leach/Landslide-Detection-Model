@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - IoT Dashboard</title>
+    <title>Sign Up - IntelliSlide</title>
     <style>
         * {
             margin: 0;
@@ -262,7 +262,7 @@
         <div class="logo">
             <div class="logo-icon">🚀</div>
             <h1>Create Account</h1>
-            <p>Join IoT Dashboard and start monitoring your devices.</p>
+            <p>Join IntelliSlide and start monitoring landslide risks.</p>
         </div>
 
         <div id="alertBox" class="alert"></div>
@@ -304,17 +304,7 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="role">Account Type</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">🎭</span>
-                    <select id="role" name="role">
-                        <option value="user">User (Standard Access)</option>
-                        <option value="viewer">Viewer (Read-Only)</option>
-                        <option value="admin">Admin (Full Access)</option>
-                    </select>
-                </div>
-            </div>
+
 
             <div class="terms">
                 <input type="checkbox" id="terms" required>
@@ -388,7 +378,6 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const role = document.getElementById('role').value;
 
             // Validation
             if (password !== confirmPassword) {
@@ -411,7 +400,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, email, password, role })
+                    body: JSON.stringify({ username, email, password })
                 });
 
                 const data = await response.json();

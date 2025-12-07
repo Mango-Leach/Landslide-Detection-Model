@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌋 Landslide AI Prediction - IoT Dashboard</title>
+    <title>IntelliSlide</title>
     <style>
         * {
             margin: 0;
@@ -203,36 +203,36 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌋 AI Landslide Prediction System</h1>
+            <h1> AI Landslide Prediction System</h1>
             <p>Predictive Analysis Based on Historical Data & Anomalies</p>
         </div>
 
         <div id="loading" class="card loading">
-            <h2>🔄 Loading prediction data...</h2>
+            <h2> Loading prediction data...</h2>
         </div>
 
         <div id="content" style="display: none;">
             <!-- AI Prediction Card -->
             <div class="card">
-                <h2>🧠 AI Landslide Risk Prediction</h2>
+                <h2> AI Landslide Risk Prediction</h2>
                 <div id="ai-status"></div>
                 <div class="prediction-box" id="prediction"></div>
             </div>
 
             <!-- Pattern Detection Card -->
             <div class="card">
-                <h2>🔍 Multi-Sensor Pattern Detection</h2>
+                <h2> Multi-Sensor Pattern Detection</h2>
                 <div id="anomaly-score"></div>
                 <div class="patterns" id="patterns"></div>
             </div>
 
             <!-- Current Conditions Card -->
             <div class="card">
-                <h2>📊 Current Environmental Conditions</h2>
+                <h2> Current Environmental Conditions</h2>
                 <div class="conditions-grid" id="conditions"></div>
             </div>
 
-            <button class="refresh-btn" onclick="loadPrediction()">🔄 Refresh Prediction</button>
+            <button class="refresh-btn" onclick="loadPrediction()"> Refresh Prediction</button>
         </div>
     </div>
 
@@ -279,10 +279,10 @@
             statusDiv.innerHTML = `
                 <div style="margin: 15px 0;">
                     <span class="status-badge ${prediction.confidence === 'LEARNING' ? 'learning' : 'trained'}">
-                        ${prediction.confidence === 'LEARNING' ? '📚 Learning Mode' : '✅ Model Trained'}
+                        ${prediction.confidence === 'LEARNING' ? ' Learning Mode' : ' Model Trained'}
                     </span>
                     <span class="status-badge learning">
-                        📈 ${prediction.eventsAnalyzed} Events Analyzed
+                         ${prediction.eventsAnalyzed} Events Analyzed
                     </span>
                 </div>
             `;
@@ -327,14 +327,14 @@
                     <div class="pattern-icon">💧</div>
                     <div>
                         <strong>Rapid Humidity Increase</strong>
-                        <p>${patterns.rapidHumidityIncrease ? '⚠️ DETECTED - Abnormal moisture accumulation' : '✅ Normal levels'}</p>
+                        <p>${patterns.rapidHumidityIncrease ? ' DETECTED - Abnormal moisture accumulation' : ' Normal levels'}</p>
                     </div>
                 </div>
                 <div class="pattern-item ${patterns.temperatureSpike ? 'active' : ''}">
                     <div class="pattern-icon">🌡️</div>
                     <div>
                         <strong>Temperature Anomaly</strong>
-                        <p>${patterns.temperatureSpike ? '⚠️ DETECTED - Unusual temperature pattern' : '✅ Normal range'}</p>
+                        <p>${patterns.temperatureSpike ? ' DETECTED - Unusual temperature pattern' : ' Normal range'}</p>
                     </div>
                 </div>
                 <div class="pattern-item ${patterns.pressureDrop ? 'active' : ''}">
@@ -348,7 +348,7 @@
                     <div class="pattern-icon">📳</div>
                     <div>
                         <strong>Sustained Ground Motion</strong>
-                        <p>${patterns.sustainedMotion ? '⚠️ DETECTED - Continuous ground movement' : '✅ No sustained motion'}</p>
+                        <p>${patterns.sustainedMotion ? ' DETECTED - Continuous ground movement' : ' No sustained motion'}</p>
                     </div>
                 </div>
             `;
@@ -376,7 +376,7 @@
                     <div class="condition-label">Pressure</div>
                 </div>
                 <div class="condition-box">
-                    <div class="condition-value">${conditions.motion ? '✅ Yes' : '❌ No'}</div>
+                    <div class="condition-value">${conditions.motion ? ' Yes' : ' No'}</div>
                     <div class="condition-label">Motion Detected</div>
                 </div>
             `;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Analytics Dashboard - Real-time Monitoring & Analytics</title>
+    <title>IntelliSlide</title>
     
     <!-- Load theme BEFORE CSS to prevent flash -->
     <script>
@@ -13,19 +13,24 @@
         })();
     </script>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <!-- Sidebar Navigation -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <i class="fas fa-microchip"></i>
-            <h2>IoT Analytics</h2>
+            <h2>Analytics</h2>
         </div>
         <nav class="sidebar-nav">
             <a href="#overview" class="nav-item active" onclick="switchView('overview')">
@@ -68,13 +73,9 @@
                 <button class="menu-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1><i class="fas fa-chart-area"></i> IoT Dashboard</h1>
+                <h1><i class="fas fa-chart-area"></i> IntelliSlide</h1>
             </div>
             <div class="header-right">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search data..." id="searchInput">
-                </div>
                 <div class="status-badge">
                     <span class="status-indicator" id="statusIndicator"></span>
                     <span id="statusText">Connecting...</span>
@@ -90,8 +91,8 @@
                     <button class="icon-btn" onclick="exportData('csv')" title="Export CSV">
                         <i class="fas fa-file-csv"></i>
                     </button>
-                    <button class="icon-btn" onclick="exportData('excel')" title="Export Excel">
-                        <i class="fas fa-file-excel"></i>
+                    <button class="icon-btn" onclick="exportData('pdf')" title="Export PDF">
+                        <i class="fas fa-file-pdf"></i>
                     </button>
                     <button class="icon-btn" onclick="toggleFullscreen()" title="Fullscreen">
                         <i class="fas fa-expand"></i>
@@ -259,7 +260,7 @@
                 </div>
             </div>
 
-            <!-- 🚀 PATENT FEATURES: Enhanced Risk Assessment & Safe Zones -->
+            <!-- � PATENT FEATURES: Enhanced Risk Assessment & Safe Zones -->
             <div class="charts-row">
                 <div class="chart-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #2d3748; border: none;">
                     <div class="chart-header" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
@@ -298,23 +299,83 @@
                 </div>
             </div>
 
-            <!-- 🗺️ GPS Safe Zones Section -->
+            <!-- 🗺️ 3D Terrain Mapping & Weak Point Detection -->
             <div class="charts-row">
-                <div class="chart-card large" style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white; border: none;">
+                <div class="chart-card large" style="background: linear-gradient(135deg, #232526 0%, #414345 100%); color: white; border: none; position: relative;">
                     <div class="chart-header" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                        <h3><i class="fas fa-map-marked-alt"></i> 🗺️ Emergency Safe Zones</h3>
-                        <button class="icon-btn-sm" onclick="refreshSafeZones()" style="background: rgba(255,255,255,0.2);">
+                        <h3><i class="fas fa-mountain"></i> 🗺️ 3D Terrain Analysis & Weak Points</h3>
+                        <button class="icon-btn-sm" onclick="updateTerrainMap()" style="background: rgba(255,255,255,0.2);">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-                    <div class="chart-body" style="padding: 20px;">
-                        <div id="safe-zones-content">
-                            <div style="text-align: center; padding: 30px;">
-                                <div style="font-size: 0.9rem; opacity: 0.9;">
-                                    <i class="fas fa-spinner fa-spin"></i> Locating nearest safe zones...
+                    <div class="chart-body" style="padding: 0; min-height: 500px; position: relative; overflow: hidden;">
+                        <!-- Device Location Input Panel -->
+                        <div style="position: absolute; top: 15px; right: 15px; z-index: 10; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 8px; border: 2px solid #4CAF50; max-width: 300px;">
+                            <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #4CAF50;">
+                                <i class="fas fa-map-pin"></i> DEVICE LOCATION
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="font-size: 10px; opacity: 0.7; display: block; margin-bottom: 3px;">Device ID:</label>
+                                <input type="text" id="terrain-device-name" value="ESP32-SLOPE-MONITOR" 
+                                    style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; font-size: 11px; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="font-size: 10px; opacity: 0.7; display: block; margin-bottom: 3px;">Latitude:</label>
+                                <input type="number" id="terrain-latitude" value="30.0668" step="0.0001"
+                                    style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; font-size: 11px; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <label style="font-size: 10px; opacity: 0.7; display: block; margin-bottom: 3px;">Longitude:</label>
+                                <input type="number" id="terrain-longitude" value="79.0193" step="0.0001"
+                                    style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; font-size: 11px; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 10px; opacity: 0.7; display: block; margin-bottom: 3px;">Elevation (m):</label>
+                                <input type="number" id="terrain-elevation" value="2500" step="1"
+                                    style="width: 100%; padding: 6px; background: rgba(255,255,255,0.1); border: 1px solid #555; color: white; font-size: 11px; border-radius: 4px;">
+                            </div>
+                            <button onclick="updateTerrainMap()" 
+                                style="width: 100%; padding: 8px; background: linear-gradient(135deg, #4CAF50, #45a049); border: none; color: white; font-size: 11px; font-weight: bold; cursor: pointer; border-radius: 4px;">
+                                ⚡ UPDATE TERRAIN
+                            </button>
+                            <div id="terrain-coords-display" style="margin-top: 10px; padding: 8px; background: rgba(76, 175, 80, 0.15); border: 1px solid #4CAF50; font-size: 9px; border-radius: 4px;">
+                                <div style="font-weight: bold; margin-bottom: 3px;">COORDINATES LOCKED</div>
+                                <div>LAT: 30.0668°N | LON: 79.0193°E</div>
+                                <div>ZONE: <span id="terrain-region-name">UTTARAKHAND</span></div>
+                                <div style="margin-top: 5px; color: #ff9800;">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    WEAK POINTS: <span id="terrain-weak-count">0</span>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Terrain Legend -->
+                        <div style="position: absolute; bottom: 15px; left: 15px; z-index: 10; background: rgba(0,0,0,0.85); padding: 12px; border-radius: 8px; border: 1px solid #555;">
+                            <div style="font-size: 11px; font-weight: bold; margin-bottom: 8px; color: #4CAF50;">TERRAIN LEGEND</div>
+                            <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 9px;">
+                                <div style="width: 20px; height: 12px; background: #ff0000; margin-right: 8px; border: 1px solid #333;"></div>
+                                <span>CRITICAL (>45° slope)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 9px;">
+                                <div style="width: 20px; height: 12px; background: #ff4400; margin-right: 8px; border: 1px solid #333;"></div>
+                                <span>HIGH RISK (30-45°)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 9px;">
+                                <div style="width: 20px; height: 12px; background: #ffaa00; margin-right: 8px; border: 1px solid #333;"></div>
+                                <span>MODERATE (15-30°)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 9px;">
+                                <div style="width: 20px; height: 12px; background: #00ff00; margin-right: 8px; border: 1px solid #333;"></div>
+                                <span>STABLE (<15°)</span>
+                            </div>
+                            <div style="display: flex; align-items: center; font-size: 9px; padding-top: 6px; border-top: 1px solid #555; margin-top: 6px;">
+                                <div style="width: 12px; height: 12px; background: #ff0000; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px #ff0000;"></div>
+                                <span>WEAK POINTS DETECTED</span>
+                            </div>
+                        </div>
+
+                        <!-- 3D Terrain Canvas -->
+                        <canvas id="terrain-3d-canvas" style="width: 100%; height: 500px; display: block;"></canvas>
                     </div>
                 </div>
             </div>
@@ -565,13 +626,13 @@
                         <button class="btn btn-primary" onclick="exportData('csv')">
                             <i class="fas fa-file-csv"></i> Export CSV
                         </button>
-                        <button class="btn btn-success" onclick="exportData('excel')">
-                            <i class="fas fa-file-excel"></i> Export Excel
+                        <button class="btn btn-danger" onclick="exportData('pdf')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
                         </button>
                         <button class="btn btn-warning" onclick="exportData('json')">
                             <i class="fas fa-file-code"></i> Export JSON
                         </button>
-                        <button class="btn btn-danger" onclick="clearData()">
+                        <button class="btn btn-dark" onclick="clearData()">
                             <i class="fas fa-trash"></i> Clear Data
                         </button>
                     </div>

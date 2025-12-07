@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { authMiddleware, adminOnly } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -28,8 +28,7 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email,
-                role: user.role
+                email: user.email
             }
         });
     } catch (error) {
@@ -71,7 +70,6 @@ router.post('/login', async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                role: user.role,
                 emailAlerts: user.emailAlerts,
                 alertThresholds: user.alertThresholds
             }
@@ -88,7 +86,6 @@ router.get('/me', authMiddleware, async (req, res) => {
             id: req.user._id,
             username: req.user.username,
             email: req.user.email,
-            role: req.user.role,
             emailAlerts: req.user.emailAlerts,
             alertThresholds: req.user.alertThresholds
         }
@@ -122,8 +119,8 @@ router.post('/logout', authMiddleware, (req, res) => {
     res.json({ success: true, message: 'Logged out successfully' });
 });
 
-// Get all users (admin only)
-router.get('/users', authMiddleware, adminOnly, async (req, res) => {
+// Get all users
+router.get('/users', authMiddleware, async (req, res) => {
     try {
         const users = await User.find().select('-password');
         res.json({ users });
@@ -132,8 +129,8 @@ router.get('/users', authMiddleware, adminOnly, async (req, res) => {
     }
 });
 
-// Delete user (admin only)
-router.delete('/users/:id', authMiddleware, adminOnly, async (req, res) => {
+// Delete user
+router.delete('/users/:id', authMiddleware, async (req, res) => {
     try {
         await User.findByIdAndDelete(req.params.id);
         res.json({ success: true, message: 'User deleted' });

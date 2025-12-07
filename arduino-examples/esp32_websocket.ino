@@ -1,7 +1,7 @@
 /*
- * ESP32 / ESP8266 IoT Dashboard Example
+ * ESP32 / ESP8266 IntelliSlide Example
  * 
- * This example sends sensor data to the IoT Dashboard via WebSocket
+ * This example sends sensor data to the IntelliSlide dashboard via WebSocket
  * Supports: DHT11/DHT22 (Temperature & Humidity), LDR (Light sensor)
  * 
  * Hardware Connections:
@@ -43,7 +43,7 @@ const unsigned long sendInterval = 2000; // Send data every 2 seconds
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\nStarting IoT Dashboard Client...");
+  Serial.println("\n\nStarting IntelliSlide Client...");
   
   // Initialize DHT sensor
   dht.begin();

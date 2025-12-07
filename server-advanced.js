@@ -16,8 +16,7 @@ const Alert = require('./models/Alert');
 // Import services
 const emailService = require('./services/emailService');
 const predictionService = require('./services/predictionService');
-const safeZoneService = require('./services/safeZoneService');
-const regionalCalibration = require('./services/regionalCalibration');
+const regionalCalibration = require('./services/regionalCalibrationService');
 const rainfallService = require('./services/rainfallService');
 
 // Import routes
@@ -30,7 +29,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/iot-dashboard';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/intellislide';
 
 // In-memory fallback storage
 let inMemoryData = [];
@@ -206,147 +205,158 @@ let pressureHistory = [];
 const MAX_PRESSURE_HISTORY = 60; // Keep last 60 readings (1 hour at 1min intervals)
 
 async function checkLandslideConditions(data, rainfallData = null) {
-    const landslideThresholds = {
-        criticalHumidity: parseFloat(process.env.LANDSLIDE_HUMIDITY_THRESHOLD) || 85,
-        criticalTemp: parseFloat(process.env.LANDSLIDE_TEMP_THRESHOLD) || 35,
-        criticalSoilMoisture: parseFloat(process.env.LANDSLIDE_SOIL_THRESHOLD) || 80,
-        lowPressure: parseFloat(process.env.LANDSLIDE_PRESSURE_THRESHOLD) || 1000,
-        criticalRainfall24h: 100,  // mm in 24 hours (GSI threshold)
-        criticalRainfall48h: 150,  // mm in 48 hours (extreme risk)
-        rapidPressureDrop: 5       // hPa per hour (storm indicator)
+    // ==========================================
+    // NORMALIZED WEIGHTED FUSION FORMULA
+    // Research Paper Format: Risk_Score = Σ(w_i × normalized_value_i)
+    // ==========================================
+    
+    const weights = {
+        rainfall: 0.35,      // w₁ = 35% (Primary trigger)
+        humidity: 0.15,      // w₂ = 15% 
+        soilMoisture: 0.15,  // w₃ = 15%
+        pressure: 0.15,      // w₄ = 15%
+        motion: 0.10,        // w₅ = 10%
+        temperature: 0.10    // w₆ = 10%
+    };
+    
+    // Normalization parameters (based on real Indian landslide data)
+    const maxValues = {
+        rainfall: 340,   // Kedarnath 2013 max
+        humidity: 100,   // Already percentage
+        soilMoisture: 100, // Already percentage
+        pressureRange: 163, // Range: 850-1013 hPa
+        temperature: 45  // Max expected
     };
     
     let riskFactors = [];
-    let riskScore = 0;
     
     // ==========================================
-    // RAINFALL ANALYSIS (NEW - BIGGEST FACTOR!)
+    // NORMALIZE SENSOR VALUES (0-100 scale)
     // ==========================================
+    
+    // 1. Rainfall normalization (R_norm)
+    let R_norm = 0;
     if (rainfallData) {
         const rainfall24h = rainfallData.cumulative24h || 0;
         const rainfall48h = rainfallData.cumulative48h || 0;
         const currentIntensity = rainfallData.currentIntensity || 0;
         
-        // Critical 48-hour rainfall (EXTREME RISK)
-        if (rainfall48h >= landslideThresholds.criticalRainfall48h) {
+        // Use maximum of 24h or 48h cumulative
+        const maxRainfall = Math.max(rainfall24h, rainfall48h);
+        R_norm = Math.min((maxRainfall / maxValues.rainfall) * 100, 100);
+        
+        // Track critical rainfall
+        if (rainfall48h >= 150) {
             riskFactors.push(`🔴 CRITICAL: ${rainfall48h.toFixed(1)}mm rain in 48h`);
-            riskScore += 4; // Highest priority!
-        }
-        // Critical 24-hour rainfall
-        else if (rainfall24h >= landslideThresholds.criticalRainfall24h) {
-            riskFactors.push(`⚠️ HIGH: ${rainfall24h.toFixed(1)}mm rain in 24h`);
-            riskScore += 3;
-        }
-        // Moderate rainfall
-        else if (rainfall24h >= 50) {
+        } else if (rainfall24h >= 100) {
+            riskFactors.push(`⚠️ HIGH: ${rainfall24h.toFixed(1)}mm rain in 24h (GSI threshold)`);
+        } else if (rainfall24h >= 50) {
             riskFactors.push(`⚠️ Elevated rain: ${rainfall24h.toFixed(1)}mm in 24h`);
-            riskScore += 2;
         }
         
-        // High intensity rainfall (>50mm/hr = violent)
         if (currentIntensity >= 50) {
             riskFactors.push(`🔴 Violent rainfall: ${currentIntensity.toFixed(1)}mm/hr`);
-            riskScore += 3;
         } else if (currentIntensity >= 20) {
             riskFactors.push(`⚠️ Heavy rainfall: ${currentIntensity.toFixed(1)}mm/hr`);
-            riskScore += 2;
-        } else if (currentIntensity >= 7.5) {
-            riskFactors.push(`Moderate rainfall: ${currentIntensity.toFixed(1)}mm/hr`);
-            riskScore += 1;
         }
     }
     
-    // ==========================================
-    // PRESSURE DROP RATE ANALYSIS (NEW!)
-    // ==========================================
-    if (data.pressure) {
-        // Add current reading to history
-        pressureHistory.push({
-            pressure: data.pressure,
-            timestamp: Date.now()
-        });
-        
-        // Keep only recent readings
-        if (pressureHistory.length > MAX_PRESSURE_HISTORY) {
-            pressureHistory.shift();
-        }
-        
-        // Calculate pressure drop rate (hPa per hour)
-        if (pressureHistory.length >= 2) {
-            const oneHourAgo = Date.now() - (60 * 60 * 1000);
-            const oldReadings = pressureHistory.filter(r => r.timestamp <= oneHourAgo);
-            
-            if (oldReadings.length > 0) {
-                const oldPressure = oldReadings[oldReadings.length - 1].pressure;
-                const currentPressure = data.pressure;
-                const timeDiff = (Date.now() - oldReadings[oldReadings.length - 1].timestamp) / (60 * 60 * 1000); // hours
-                const pressureDropRate = (oldPressure - currentPressure) / timeDiff;
-                
-                // Rapid pressure drop indicates incoming storm
-                if (pressureDropRate >= landslideThresholds.rapidPressureDrop) {
-                    riskFactors.push(`🔴 Rapid pressure drop: ${pressureDropRate.toFixed(1)} hPa/hr`);
-                    riskScore += 2;
-                } else if (pressureDropRate >= 3) {
-                    riskFactors.push(`⚠️ Pressure falling: ${pressureDropRate.toFixed(1)} hPa/hr`);
-                    riskScore += 1;
-                }
-            }
-        }
-        
-        // Absolute low pressure
-        if (data.pressure < landslideThresholds.lowPressure) {
-            riskFactors.push(`Low pressure: ${data.pressure.toFixed(1)} hPa`);
-            riskScore += 1;
-        }
-    }
-    
-    // ==========================================
-    // ORIGINAL SENSOR CHECKS
-    // ==========================================
-    
-    // High humidity (indicates recent/ongoing rain)
-    if (data.humidity >= landslideThresholds.criticalHumidity) {
+    // 2. Humidity normalization (H_norm) - already 0-100
+    const H_norm = data.humidity || 0;
+    if (data.humidity >= 85) {
         riskFactors.push(`Critical humidity: ${data.humidity.toFixed(1)}%`);
-        riskScore += 3;
     } else if (data.humidity >= 75) {
         riskFactors.push(`High humidity: ${data.humidity.toFixed(1)}%`);
-        riskScore += 2;
     }
     
-    // High temperature (thermal expansion + moisture = instability)
-    if (data.temperature >= landslideThresholds.criticalTemp) {
-        riskFactors.push(`High temperature: ${data.temperature.toFixed(1)}°C`);
-        riskScore += 2;
-    }
-    
-    // Soil moisture (DIRECT MEASURE - most reliable if available)
-    if (data.soilMoisture !== undefined && data.soilMoisture >= landslideThresholds.criticalSoilMoisture) {
+    // 3. Soil moisture normalization (S_norm) - already 0-100
+    const S_norm = data.soilMoisture || 0;
+    if (data.soilMoisture >= 80) {
         riskFactors.push(`🔴 Critical soil moisture: ${data.soilMoisture.toFixed(1)}%`);
-        riskScore += 3;
     }
     
-    // Ground motion (CRITICAL - indicates slope already moving!)
+    // 4. Pressure normalization (P_norm) - inverse (lower pressure = higher risk)
+    let P_norm = 0;
+    if (data.pressure) {
+        P_norm = Math.min(((1013 - data.pressure) / maxValues.pressureRange) * 100, 100);
+        if (data.pressure < 1000) {
+            riskFactors.push(`Low pressure: ${data.pressure.toFixed(1)} hPa`);
+        }
+    }
+    
+    // 5. Motion normalization (M_norm) - binary (0 or 100)
+    const M_norm = data.motion ? 100 : 0;
     if (data.motion) {
         riskFactors.push(`🔴 GROUND MOTION DETECTED`);
-        riskScore += 2;
+    }
+    
+    // 6. Temperature normalization (T_norm)
+    const T_norm = Math.min((data.temperature / maxValues.temperature) * 100, 100);
+    if (data.temperature >= 35) {
+        riskFactors.push(`High temperature: ${data.temperature.toFixed(1)}°C`);
     }
     
     // ==========================================
-    // RISK ASSESSMENT
+    // CALCULATE WEIGHTED RISK SCORE (0-100)
+    // Formula: Risk_Score = Σ(w_i × normalized_value_i)
     // ==========================================
     
+    const riskScore = (
+        weights.rainfall * R_norm +
+        weights.humidity * H_norm +
+        weights.soilMoisture * S_norm +
+        weights.pressure * P_norm +
+        weights.motion * M_norm +
+        weights.temperature * T_norm
+    );
+    
+    // ==========================================
+    // REGIONAL CALIBRATION (Universal Multi-Region Risk)
+    // ==========================================
+    
+    // Get regionally-calibrated risk score
+    const calibration = regionalCalibration.getCalibratedRisk(
+        {
+            temperature: data.temperature,
+            humidity: data.humidity,
+            pressure: data.pressure,
+            soilMoisture: data.soilMoisture
+        },
+        riskScore,
+        data.location || data.deviceId
+    );
+    
+    const finalRiskScore = calibration.calibratedRisk;
+    const regionalThreshold = calibration.regionThreshold;
+    
     // Determine if landslide alert should be triggered
-    // Risk score >= 5 indicates high landslide risk
-    const detected = riskScore >= 5;
+    // Use region-specific threshold (adaptive to local conditions)
+    const detected = finalRiskScore >= regionalThreshold;
     
     return {
         detected,
-        riskScore,
-        maxRiskScore: 20, // Updated max with rainfall factors
+        riskScore: Math.round(finalRiskScore * 10) / 10, // Round to 1 decimal
+        baseRiskScore: Math.round(riskScore * 10) / 10, // Original score before calibration
+        maxRiskScore: 100, // Updated to 0-100 scale
         riskFactors,
-        severity: riskScore >= 10 ? 'critical' : riskScore >= 7 ? 'high' : riskScore >= 5 ? 'moderate' : 'low',
+        severity: finalRiskScore >= 70 ? 'critical' : finalRiskScore >= 50 ? 'high' : finalRiskScore >= 35 ? 'moderate' : finalRiskScore >= regionalThreshold ? 'low' : 'safe',
         hasRainfallData: rainfallData !== null,
-        accuracyEstimate: rainfallData ? '60-70%' : '30-50%' // Show accuracy based on data availability
+        accuracyEstimate: rainfallData ? '60-70%' : '30-50%', // Show accuracy based on data availability
+        regionalCalibration: {
+            regionId: calibration.regionId,
+            threshold: Math.round(regionalThreshold * 10) / 10,
+            anomalyScore: Math.round(calibration.anomalyScore * 100) / 100,
+            hasProfile: calibration.hasRegionalProfile,
+            confidence: calibration.confidence
+        },
+        normalizedValues: { // For debugging/research
+            rainfall: Math.round(R_norm * 10) / 10,
+            humidity: Math.round(H_norm * 10) / 10,
+            soilMoisture: Math.round(S_norm * 10) / 10,
+            pressure: Math.round(P_norm * 10) / 10,
+            motion: Math.round(M_norm * 10) / 10,
+            temperature: Math.round(T_norm * 10) / 10
+        }
     };
 }
 
@@ -379,27 +389,16 @@ async function handleLandslideAlert(data, landslideRisk, rainfallData = null) {
             await alert.save();
         }
         
-        // Get admin and regular users
+        // Send email alert to ALL users in database
         if (dbConnected) {
             const User = require('./models/User');
             
-            // Send WARNING email to ADMINS
-            const adminUsers = await User.find({ role: 'admin', emailAlerts: true });
-            if (adminUsers.length > 0) {
-                const adminEmails = adminUsers.map(user => user.email);
-                console.log(`🚨 Sending landslide ADMIN WARNING to: ${adminEmails.join(', ')}`);
-                await emailService.sendLandslideAdminWarning(data, adminEmails, rainfallData);
-            }
-            
-            // Send EVACUATION email to ALL USERS
-            const regularUsers = await User.find({ 
-                role: { $ne: 'admin' },
-                emailAlerts: true 
-            });
-            if (regularUsers.length > 0) {
-                const userEmails = regularUsers.map(user => user.email);
-                console.log(`🚨 Sending landslide EVACUATION ALERT to ${userEmails.length} users`);
-                await emailService.sendLandslideUserAlert(data, userEmails);
+            // Send alert email to ALL USERS
+            const allUsers = await User.find({ emailAlerts: true });
+            if (allUsers.length > 0) {
+                const allEmails = allUsers.map(user => user.email);
+                console.log(`🚨 Sending landslide alert to ${allEmails.length} user(s): ${allEmails.join(', ')}`);
+                await emailService.sendLandslideUserAlert(data, allEmails);
             }
             
             // Send SMS to all users with SMS enabled
@@ -598,27 +597,15 @@ async function checkThresholdsAndAlert(data) {
                 const alert = new Alert(alertData);
                 await alert.save();
                 
-                // Send email alerts to all ADMIN users only
+                // Send email alerts to ALL users
                 try {
                     const User = require('./models/User');
-                    const adminUsers = await User.find({ 
-                        role: 'admin',
-                        emailAlerts: true 
-                    });
+                    const allUsers = await User.find({ emailAlerts: true });
                     
-                    if (adminUsers.length > 0) {
-                        const recipients = adminUsers.map(user => user.email);
-                        console.log(`📧 Sending alert to ${recipients.length} admin(s): ${recipients.join(', ')}`);
+                    if (allUsers.length > 0) {
+                        const recipients = allUsers.map(user => user.email);
+                        console.log(`📧 Sending alert to ${recipients.length} user(s): ${recipients.join(', ')}`);
                         await emailService.sendAlert(alertData, recipients);
-                    }
-                    
-                    // Also send to admin emails from .env if configured
-                    if (process.env.ALERT_EMAILS) {
-                        const adminRecipients = process.env.ALERT_EMAILS.split(',').map(e => e.trim()).filter(e => e);
-                        if (adminRecipients.length > 0) {
-                            console.log(`📧 Sending alert to admin email(s): ${adminRecipients.join(', ')}`);
-                            await emailService.sendAlert(alertData, adminRecipients);
-                        }
                     }
                     
                     // Send SMS alerts to users with SMS enabled
@@ -776,151 +763,39 @@ app.get('/api/landslide-prediction', optionalAuth, async (req, res) => {
     }
 });
 
-// 🗺️ NEW: Get nearest safe zones
-app.get('/api/safe-zones/nearest', async (req, res) => {
+// 🌍 NEW: Get all regional calibration profiles
+app.get('/api/regional-profiles', (req, res) => {
     try {
-        const { latitude, longitude, maxResults } = req.query;
-        
-        if (!latitude || !longitude) {
-            return res.status(400).json({ error: 'Latitude and longitude required' });
-        }
-        
-        const zones = safeZoneService.findNearestSafeZones(
-            parseFloat(latitude),
-            parseFloat(longitude),
-            parseInt(maxResults) || 3
-        );
-        
-        res.json({ zones });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// 🗺️ NEW: Get complete evacuation plan
-app.get('/api/evacuation-plan', async (req, res) => {
-    try {
-        const { latitude, longitude } = req.query;
-        console.log(`🗺️ Evacuation plan requested for: ${latitude}, ${longitude}`);
-        
-        if (!latitude || !longitude) {
-            console.error('❌ Missing latitude or longitude');
-            return res.status(400).json({ error: 'Latitude and longitude required' });
-        }
-        
-        const plan = safeZoneService.getEvacuationPlan(
-            parseFloat(latitude),
-            parseFloat(longitude)
-        );
-        
-        console.log('✅ Evacuation plan generated:', plan ? 'Success' : 'Failed');
-        res.json(plan);
-    } catch (error) {
-        console.error('❌ Error generating evacuation plan:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// 🗺️ NEW: Get all safe zones (admin)
-app.get('/api/safe-zones/all', async (req, res) => {
-    try {
-        const zones = safeZoneService.getAllSafeZones();
-        res.json({ zones, total: zones.length });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// 🗺️ ADMIN: Add new safe zone
-app.post('/api/safe-zones', authMiddleware, async (req, res) => {
-    try {
-        const { name, type, latitude, longitude, address, capacity, facilities, contact, elevation, isTemporary } = req.body;
-        
-        // Validation
-        if (!name || !latitude || !longitude || !address) {
-            return res.status(400).json({ error: 'Name, latitude, longitude, and address are required' });
-        }
-        
-        const newZone = safeZoneService.addSafeZone({
-            name,
-            type,
-            latitude,
-            longitude,
-            address,
-            capacity,
-            facilities,
-            contact,
-            elevation,
-            isTemporary,
-            createdBy: req.user?.username || 'admin'
-        });
-        
-        res.status(201).json({ 
-            success: true,
-            message: 'Safe zone created successfully',
-            zone: newZone 
-        });
-    } catch (error) {
-        console.error('Error creating safe zone:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// 🗺️ ADMIN: Update safe zone
-app.put('/api/safe-zones/:id', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body;
-        
-        const updatedZone = safeZoneService.updateSafeZone(id, updates);
-        
-        if (!updatedZone) {
-            return res.status(404).json({ error: 'Safe zone not found' });
-        }
-        
+        const profiles = regionalCalibration.getAllProfiles();
         res.json({ 
-            success: true,
-            message: 'Safe zone updated successfully',
-            zone: updatedZone 
+            profiles,
+            totalRegions: profiles.length,
+            message: 'Regional calibration profiles (universal - adapts to any dataset)'
         });
     } catch (error) {
-        console.error('Error updating safe zone:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// 🗺️ ADMIN: Delete safe zone
-app.delete('/api/safe-zones/:id', authMiddleware, async (req, res) => {
+// 🌍 NEW: Get specific region profile
+app.get('/api/regional-profile/:location', (req, res) => {
     try {
-        const { id } = req.params;
-        
-        const deleted = safeZoneService.deleteSafeZone(id);
-        
-        if (!deleted) {
-            return res.status(404).json({ error: 'Safe zone not found' });
+        const profile = regionalCalibration.getRegionProfile(req.params.location);
+        if (profile) {
+            res.json({ profile });
+        } else {
+            res.status(404).json({ error: 'Region not found', message: 'System will use global baseline for this location' });
         }
-        
-        res.json({ 
-            success: true,
-            message: 'Safe zone deleted successfully'
-        });
     } catch (error) {
-        console.error('Error deleting safe zone:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// 🗺️ Get safe zone by ID
-app.get('/api/safe-zones/:id', async (req, res) => {
+// 🌍 NEW: Export regional calibration data
+app.get('/api/regional-calibration/export', (req, res) => {
     try {
-        const { id } = req.params;
-        const zone = safeZoneService.getSafeZoneById(id);
-        
-        if (!zone) {
-            return res.status(404).json({ error: 'Safe zone not found' });
-        }
-        
-        res.json({ zone });
+        const calibrationData = regionalCalibration.exportCalibration();
+        res.json(calibrationData);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -1225,7 +1100,7 @@ function startBackgroundTasks() {
 // Start server
 server.listen(PORT, () => {
     console.log('╔════════════════════════════════════════╗');
-    console.log('║   🚀 IoT Dashboard Server Started     ║');
+    console.log('║   🚀 IntelliSlide Server Started      ║');
     console.log('╠════════════════════════════════════════╣');
     console.log(`║   🌐 URL: http://localhost:${PORT}       ║`);
     console.log(`║   📊 Database: ${dbConnected ? 'Connected ✅' : 'Memory Mode ⚠️ '}  ║`);

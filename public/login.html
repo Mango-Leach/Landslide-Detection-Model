@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - IoT Dashboard</title>
+    <title>Login - IntelliSlide</title>
     <style>
         * {
             margin: 0;
@@ -287,8 +287,8 @@
 <body>
     <div class="login-container">
         <div class="logo">
-            <div class="logo-icon">🚀</div>
-            <h1>IoT Dashboard</h1>
+            <div class="logo-icon"></div>
+            <h1>IntelliSlide</h1>
             <p>Welcome back! Please login to your account.</p>
         </div>
 
@@ -298,8 +298,7 @@
 
         <div class="demo-credentials">
             <h4>🔑 Demo Credentials:</h4>
-            <p><strong>User Account:</strong> demo@iot.com / demo123</p>
-            <p><strong>Admin Account:</strong> admin@iot-dashboard.com / admin123</p>
+            <p><strong>Demo Account:</strong> mango.leach.101@gmail.com / password123</p>
         </div>
 
         <div id="alertBox" class="alert"></div>
@@ -393,13 +392,9 @@
 
                     showAlert('Login successful! Redirecting...', 'success');
                     
-                    // Redirect based on role
+                    // Redirect to dashboard
                     setTimeout(() => {
-                        if (data.user.role === 'admin') {
-                            window.location.href = 'admin.html';
-                        } else {
-                            window.location.href = 'index.html';
-                        }
+                        window.location.href = 'index.html';
                     }, 1000);
                 } else {
                     showAlert(data.message || 'Invalid credentials. Please try again.', 'error');
@@ -416,7 +411,7 @@
 
         // Auto-fill demo credentials (optional)
         document.querySelector('.demo-credentials').addEventListener('click', () => {
-            document.getElementById('email').value = 'demo@iot.com';
+            document.getElementById('email').value = 'mango.leach.101@gmail.com';
             document.getElementById('password').value = 'demo123';
         });
     </script>

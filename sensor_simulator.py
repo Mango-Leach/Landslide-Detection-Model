@@ -52,7 +52,7 @@ async def send_data():
                 ping_timeout=10,   # Wait 10 seconds for pong
                 close_timeout=5    # Timeout for close handshake
             ) as websocket:
-                print("✅ Connected to IoT Dashboard")
+                print("✅ Connected to IntelliSlide")
                 print(f"📡 Device ID: {DEVICE_ID}")
                 print("-" * 50)
                 

@@ -1,7 +1,12 @@
 const brain = require('brain.js');
+const fs = require('fs');
+const path = require('path');
 
 class PredictionService {
     constructor() {
+        this.modelsDir = path.join(__dirname, '../saved_models');
+        this.ensureModelsDirectory();
+        
         this.tempNetwork = new brain.recurrent.LSTMTimeStep({
             inputSize: 1,
             hiddenLayers: [10],
@@ -23,6 +28,119 @@ class PredictionService {
         this.trained = false;
         this.landslideTrained = false;
         this.landslideHistory = [];
+        
+        // Load saved models if they exist
+        this.loadModels();
+    }
+    
+    ensureModelsDirectory() {
+        if (!fs.existsSync(this.modelsDir)) {
+            fs.mkdirSync(this.modelsDir, { recursive: true });
+            console.log('📁 Created saved_models directory');
+        }
+    }
+    
+    loadModels() {
+        try {
+            const tempModelPath = path.join(this.modelsDir, 'temperature.json');
+            const humidityModelPath = path.join(this.modelsDir, 'humidity.json');
+            const landslideModelPath = path.join(this.modelsDir, 'landslide.json');
+            const metadataPath = path.join(this.modelsDir, 'metadata.json');
+            
+            // Load temperature model
+            if (fs.existsSync(tempModelPath)) {
+                const tempModelData = JSON.parse(fs.readFileSync(tempModelPath, 'utf8'));
+                this.tempNetwork.fromJSON(tempModelData.model);
+                this.tempMin = tempModelData.min;
+                this.tempMax = tempModelData.max;
+                console.log('✅ Loaded temperature prediction model');
+            }
+            
+            // Load humidity model
+            if (fs.existsSync(humidityModelPath)) {
+                const humidityModelData = JSON.parse(fs.readFileSync(humidityModelPath, 'utf8'));
+                this.humidityNetwork.fromJSON(humidityModelData.model);
+                this.humidityMin = humidityModelData.min;
+                this.humidityMax = humidityModelData.max;
+                console.log('✅ Loaded humidity prediction model');
+            }
+            
+            // Load landslide model
+            if (fs.existsSync(landslideModelPath)) {
+                const landslideModelData = JSON.parse(fs.readFileSync(landslideModelPath, 'utf8'));
+                this.landslideNetwork.fromJSON(landslideModelData.model);
+                this.landslideTrained = true;
+                console.log('✅ Loaded landslide prediction model');
+            }
+            
+            // Load metadata
+            if (fs.existsSync(metadataPath)) {
+                const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+                this.landslideHistory = metadata.landslideHistory || [];
+                console.log(`📊 Loaded ${this.landslideHistory.length} historical landslide events`);
+            }
+            
+            // Mark as trained if all models loaded
+            if (fs.existsSync(tempModelPath) && fs.existsSync(humidityModelPath)) {
+                this.trained = true;
+                console.log('🧠 All AI models loaded successfully from disk');
+            }
+            
+        } catch (error) {
+            console.error('⚠️ Error loading models:', error.message);
+        }
+    }
+    
+    saveModels() {
+        try {
+            const tempModelPath = path.join(this.modelsDir, 'temperature.json');
+            const humidityModelPath = path.join(this.modelsDir, 'humidity.json');
+            const landslideModelPath = path.join(this.modelsDir, 'landslide.json');
+            const metadataPath = path.join(this.modelsDir, 'metadata.json');
+            
+            // Save temperature model
+            if (this.trained) {
+                const tempModelData = {
+                    model: this.tempNetwork.toJSON(),
+                    min: this.tempMin,
+                    max: this.tempMax,
+                    savedAt: new Date().toISOString()
+                };
+                fs.writeFileSync(tempModelPath, JSON.stringify(tempModelData, null, 2));
+                
+                // Save humidity model
+                const humidityModelData = {
+                    model: this.humidityNetwork.toJSON(),
+                    min: this.humidityMin,
+                    max: this.humidityMax,
+                    savedAt: new Date().toISOString()
+                };
+                fs.writeFileSync(humidityModelPath, JSON.stringify(humidityModelData, null, 2));
+                
+                console.log('💾 Saved temperature and humidity prediction models');
+            }
+            
+            // Save landslide model
+            if (this.landslideTrained) {
+                const landslideModelData = {
+                    model: this.landslideNetwork.toJSON(),
+                    savedAt: new Date().toISOString()
+                };
+                fs.writeFileSync(landslideModelPath, JSON.stringify(landslideModelData, null, 2));
+                console.log('💾 Saved landslide prediction model');
+            }
+            
+            // Save metadata
+            const metadata = {
+                landslideHistory: this.landslideHistory.slice(-100), // Keep last 100 events
+                lastUpdated: new Date().toISOString(),
+                totalEventsRecorded: this.landslideHistory.length
+            };
+            fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+            
+        } catch (error) {
+            console.error('⚠️ Error saving models:', error.message);
+        }
     }
     
     async trainModels(data) {
@@ -60,6 +178,10 @@ class PredictionService {
             this.humidityMax = Math.max(...humidityData);
             
             console.log('AI models trained successfully');
+            
+            // Save models to disk for persistence
+            this.saveModels();
+            
             return true;
         } catch (error) {
             console.error('Failed to train models:', error);
@@ -216,6 +338,10 @@ class PredictionService {
             
             this.landslideTrained = true;
             console.log('✅ Landslide prediction model trained');
+            
+            // Save landslide model to disk for persistence
+            this.saveModels();
+            
             return true;
         } catch (error) {
             console.error('Failed to train landslide model:', error);

@@ -12,7 +12,7 @@ async def send_landslide_data():
     
     try:
         async with websockets.connect(uri) as websocket:
-            print("✅ Connected to IoT Dashboard")
+            print("✅ Connected to IntelliSlide")
             print("📡 Device ID: ESP32-LANDSLIDE-TEST\n")
             
             # Test Case 1: High Risk Landslide (Risk Score = 7)
