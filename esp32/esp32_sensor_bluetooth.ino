@@ -3,7 +3,7 @@
  * Based on your working code + Bluetooth transmission
  * 
  * Sensors Connected:
- * - DHT22 (Temperature & Humidity) - Pin 4
+ * - BME280 (Temperature, Humidity & Pressure) - I2C (SDA=21, SCL=22)
  * - Capacitive Soil Moisture - Pin 34 (ADC)
  * - MPU6050 (Motion/Vibration) - I2C (SDA=21, SCL=22)
  * - RTC DS3231 (Real-Time Clock) - I2C (SDA=21, SCL=22)
@@ -16,13 +16,12 @@
 #include <BluetoothSerial.h>
 #include <Wire.h>
 #include "RTClib.h"
-#include "DHT.h"
+#include <Adafruit_BME280.h>
 #include <ArduinoJson.h>
 
-// ----- DHT22 -----
-#define DHTPIN 4
-#define DHTTYPE DHT22
-DHT dht(DHTPIN, DHTTYPE);
+// ----- BME280 -----
+#define BME280_ADDRESS 0x76  // Default I2C address (try 0x77 if this doesn't work)
+Adafruit_BME280 bme;
 
 // ----- Soil Moisture -----
 #define SOIL_PIN 34
@@ -33,7 +32,8 @@ const int wetValue = 1100;  // Your wet soil calibration
 #define MPU_ADDR 0x68
 
 // ----- LED & Buzzer -----
-#define LED_PIN 2
+#define RED_LED_PIN 2       // Red LED for landslide detection
+#define YELLOW_LED_PIN 4    // Yellow LED for abnormal parameters
 #define BUZZER_PIN 15
 
 // ----- RTC -----
@@ -66,9 +66,12 @@ void setup() {
   Serial.println(DEVICE_NAME);
   Serial.println("Waiting for connection...");
 
-  // Initialize DHT22
-  dht.begin();
-  Serial.println("✅ DHT22 initialized");
+  // Initialize BME280
+  if (!bme.begin(BME280_ADDRESS)) {
+    Serial.println("❌ BME280 not found! Check wiring or try address 0x77");
+  } else {
+    Serial.println("✅ BME280 initialized");
+  }
 
   // Initialize MPU6050
   Wire.beginTransmission(MPU_ADDR);
@@ -89,12 +92,14 @@ void setup() {
   // Uncomment ONCE to sync time to system compile time
   // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
-  // Initialize LED & Buzzer
-  pinMode(LED_PIN, OUTPUT);
+  // Initialize LEDs & Buzzer
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(YELLOW_LED_PIN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(RED_LED_PIN, LOW);
+  digitalWrite(YELLOW_LED_PIN, LOW);
   digitalWrite(BUZZER_PIN, LOW);
-  Serial.println("✅ LED & Buzzer initialized");
+  Serial.println("✅ Red LED, Yellow LED & Buzzer initialized");
 
   Serial.println("\n🚀 System Ready! Sending data...\n");
 }
@@ -139,16 +144,20 @@ void readAndSendSensorData() {
     }
   }
 
-  // --- DHT22 ---
-  float temp = dht.readTemperature();
-  float hum  = dht.readHumidity();
-  if (isnan(temp) || isnan(hum)) {
-    Serial.println("❌ Failed to read DHT22!");
-    temp = 25.0;  // Default value
-    hum = 50.0;   // Default value
+  // --- BME280 ---
+  float temp = bme.readTemperature();
+  float hum = bme.readHumidity();
+  float pressure = bme.readPressure() / 100.0F;  // Convert Pa to hPa (millibars)
+  
+  if (isnan(temp) || isnan(hum) || isnan(pressure)) {
+    Serial.println("❌ Failed to read BME280!");
+    temp = 25.0;       // Default value
+    hum = 50.0;        // Default value
+    pressure = 1013.25; // Default sea-level pressure
   } else {
     Serial.print("🌡️ Temperature: "); Serial.print(temp); Serial.print(" °C, ");
-    Serial.print("Humidity: "); Serial.print(hum); Serial.println(" %");
+    Serial.print("Humidity: "); Serial.print(hum); Serial.print(" %, ");
+    Serial.print("Pressure: "); Serial.print(pressure); Serial.println(" hPa");
   }
 
   // --- Soil Moisture ---
@@ -177,19 +186,43 @@ void readAndSendSensorData() {
     Serial.println("❌ MPU6050 read error!");
   }
 
-  // --- Landslide Detection Logic ---
-  bool alert = false;
+  // --- Detection Logic ---
+  bool landslideAlert = false;     // Critical landslide detection
+  bool abnormalWarning = false;    // Any parameter abnormal
   String alertReason = "";
 
-  if (soilPercent > 70) {  // High soil moisture
-    alert = true;
+  // Check individual parameters for abnormal values (Yellow LED)
+  if (temp > 45 || temp < 0) {
+    abnormalWarning = true;
+    alertReason += "Abnormal temperature! ";
+    Serial.println("⚠️ Abnormal temperature detected!");
+  }
+
+  if (hum > 95) {
+    abnormalWarning = true;
+    alertReason += "Extreme humidity! ";
+    Serial.println("⚠️ Extreme humidity detected!");
+  }
+
+  if (pressure < 950 || pressure > 1050) {
+    abnormalWarning = true;
+    alertReason += "Abnormal pressure! ";
+    Serial.println("⚠️ Abnormal pressure detected!");
+  }
+
+  if (soilPercent > 80) {  // Critical soil moisture
+    abnormalWarning = true;
     alertReason += "High soil moisture! ";
     Serial.println("⚠️ High soil moisture detected!");
   }
 
-  // Motion detection - Lower threshold for easier testing (5000 instead of 15000)
-  if (abs(ax) > 5000 || abs(ay) > 5000 || abs(az - 16384) > 5000) {
-    alert = true;
+  // Motion detection - Properly calibrated threshold
+  // At rest: ax ≈ 0, ay ≈ 0, az ≈ 16384 (1g gravity)
+  // Using 8000 threshold (~0.5g) to detect significant movement/shaking
+  bool motionDetected = false;
+  if (abs(ax) > 8000 || abs(ay) > 8000 || abs(az - 16384) > 8000) {
+    motionDetected = true;
+    abnormalWarning = true;
     alertReason += "Sudden tilt/vibration! ";
     Serial.println("⚠️ Sudden tilt/vibration detected!");
     Serial.print("   Motion values: X="); Serial.print(ax);
@@ -197,12 +230,30 @@ void readAndSendSensorData() {
     Serial.print(" Z="); Serial.println(az);
   }
 
-  if (alert) {
-    digitalWrite(LED_PIN, HIGH);
+  // LANDSLIDE DETECTION: High soil moisture + Motion detected
+  if (soilPercent > 80 && motionDetected) {
+    landslideAlert = true;
+    alertReason = "LANDSLIDE RISK: High moisture + Ground movement! ";
+    Serial.println("🚨🚨🚨 CRITICAL: LANDSLIDE RISK DETECTED! 🚨🚨🚨");
+  }
+
+  // Control LEDs and Buzzer based on detection level
+  if (landslideAlert) {
+    // CRITICAL: Red LED + Buzzer
+    digitalWrite(RED_LED_PIN, HIGH);
+    digitalWrite(YELLOW_LED_PIN, LOW);
     digitalWrite(BUZZER_PIN, HIGH);
-    Serial.println("🚨 ALERT: Possible Landslide Risk Detected!");
+    Serial.println("🚨 RED ALERT: Landslide Risk - Buzzer Active!");
+  } else if (abnormalWarning) {
+    // WARNING: Yellow LED only (no buzzer)
+    digitalWrite(RED_LED_PIN, LOW);
+    digitalWrite(YELLOW_LED_PIN, HIGH);
+    digitalWrite(BUZZER_PIN, LOW);
+    Serial.println("⚠️ YELLOW WARNING: Abnormal Parameter Detected!");
   } else {
-    digitalWrite(LED_PIN, LOW);
+    // NORMAL: All off
+    digitalWrite(RED_LED_PIN, LOW);
+    digitalWrite(YELLOW_LED_PIN, LOW);
     digitalWrite(BUZZER_PIN, LOW);
     Serial.println("✅ Normal Conditions");
   }
@@ -213,15 +264,16 @@ void readAndSendSensorData() {
   doc["deviceId"] = DEVICE_NAME;
   doc["temperature"] = temp;
   doc["humidity"] = hum;
-  doc["pressure"] = 1013.25;          // Default (no sensor)
+  doc["pressure"] = pressure;         // Real pressure from BME280
   doc["co2"] = 400;                   // Default (no sensor)
   doc["light"] = 500;                 // Default (no sensor)
-  doc["soilMoisture"] = soilPercent;  // Your working sensor!
-  doc["motion"] = alert;              // Boolean true/false (not "Y"/"N")
+  doc["soilMoisture"] = soilPercent;      // Your working sensor!
+  doc["motion"] = motionDetected;         // Boolean true/false
   // Don't send bad RTC timestamp - let dashboard use system time
   // doc["timestamp"] = timestamp;
-  doc["alert"] = alert;               // Alert status
-  doc["alertReason"] = alertReason;   // Why alert triggered
+  doc["alert"] = landslideAlert;          // Critical landslide alert
+  doc["warning"] = abnormalWarning;       // Abnormal parameter warning
+  doc["alertReason"] = alertReason;       // Why alert/warning triggered
   
   // Add raw accelerometer data
   JsonObject accel = doc.createNestedObject("accelerometer");

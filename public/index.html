@@ -179,6 +179,26 @@
                     </div>
                 </div>
 
+                <div class="stat-card soil-moisture">
+                    <div class="stat-header">
+                        <i class="fas fa-droplet"></i>
+                        <span>Soil Moisture</span>
+                    </div>
+                    <div class="stat-body">
+                        <h2 id="soilMoistureValue">--</h2>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="stat-footer">
+                        <span class="trend" id="soilMoistureTrend">
+                            <i class="fas fa-minus"></i> 0.0%
+                        </span>
+                        <span class="stat-label">vs last reading</span>
+                    </div>
+                    <div class="stat-mini-chart">
+                        <canvas id="soilMoistureMiniChart"></canvas>
+                    </div>
+                </div>
+
                 <div class="stat-card rainfall">
                     <div class="stat-header">
                         <i class="fas fa-cloud-rain"></i>
@@ -412,6 +432,18 @@
                     </div>
                     <div class="chart-body">
                         <canvas id="pressureChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-droplet"></i> Soil Moisture Monitoring</h3>
+                        <button class="icon-btn-sm" onclick="downloadChart('soilMoistureChart')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="soilMoistureChart"></canvas>
                     </div>
                 </div>
             </div>

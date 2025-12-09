@@ -194,6 +194,54 @@ function initCharts() {
         }
     });
     
+    // Soil Moisture Chart
+    charts.soilMoisture = new Chart(document.getElementById('soilMoistureChart'), {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Soil Moisture (%)',
+                data: [],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'minute',
+                        displayFormats: { minute: 'HH:mm' }
+                    }
+                },
+                y: { 
+                    beginAtZero: true,
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Soil Moisture: ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
     // Pie Chart
     charts.pie = new Chart(document.getElementById('pieChart'), {
         type: 'doughnut',
@@ -324,6 +372,20 @@ function initMiniCharts() {
             datasets: [{
                 data: [],
                 borderColor: '#8b5cf6',
+                borderWidth: 2,
+                tension: 0.4
+            }]
+        },
+        options: miniChartOptions
+    });
+    
+    charts.soilMoistureMini = new Chart(document.getElementById('soilMoistureMiniChart'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                borderColor: '#10b981',
                 borderWidth: 2,
                 tension: 0.4
             }]
@@ -570,6 +632,10 @@ function updateStatCards() {
     document.getElementById('pressureValue').textContent = latest.pressure?.toFixed(1) || '--';
     updateTrend('pressureTrend', latest.pressure, previous.pressure, ' hPa');
     
+    // Soil Moisture
+    document.getElementById('soilMoistureValue').textContent = latest.soilMoisture?.toFixed(1) || '--';
+    updateTrend('soilMoistureTrend', latest.soilMoisture, previous.soilMoisture, '%');
+    
     // Rainfall - Fetch from server
     fetchRainfallData();
     
@@ -617,6 +683,11 @@ function updateMainCharts() {
     // Update pressure chart
     charts.pressure.data.datasets[0].data = pressures;
     charts.pressure.update('none');
+    
+    // Update soil moisture chart
+    const soilMoistures = recentData.map(d => ({ x: new Date(d.timestamp), y: d.soilMoisture || 0 }));
+    charts.soilMoisture.data.datasets[0].data = soilMoistures;
+    charts.soilMoisture.update('none');
     
     // Update pie chart
     const temps = allData.map(d => d.temperature || 0);
@@ -670,6 +741,11 @@ function updateMiniCharts() {
     charts.pressureMini.data.labels = labels;
     charts.pressureMini.data.datasets[0].data = pressures;
     charts.pressureMini.update('none');
+    
+    const soilMoistures = recentData.map(d => d.soilMoisture || 0);
+    charts.soilMoistureMini.data.labels = labels;
+    charts.soilMoistureMini.data.datasets[0].data = soilMoistures;
+    charts.soilMoistureMini.update('none');
 }
 
 // Update gauges

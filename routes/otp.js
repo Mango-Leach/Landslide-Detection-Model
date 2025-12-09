@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const emailService = require('../services/emailService');
-const smsService = require('../services/smsService');
+// const smsService = require('../services/smsService'); // SMS feature disabled
 const crypto = require('crypto');
 
 // Generate 6-digit OTP
